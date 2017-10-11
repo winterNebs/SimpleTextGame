@@ -45,43 +45,41 @@ public:
 };
 class WorldNode {
 public:
-	static WorldNode *head;
-	WorldNode *dirs[4];
 	Tile t;
 	int x;
 	int y;
 	WorldNode(int xpos, int ypos) {
-		for (auto i : dirs) {
-			i = nullptr;
-		}
 		t = Tile(rand() * 223 + 32, xpos, ypos);
 	}
 	WorldNode() {
 		WorldNode(NULL, NULL);
 	}
-	void addNode(int dir, WorldNode& node) {
-		*dirs[dir] = node;
-	}
-	WorldNode(WorldNode *dir[4]) {
-		for (int i = 0; i < 4; i++) {
-			dirs[i] = dir[i];
-		}
-	}
 };
 class Chunk {
-	//Array to graph
 public:
 	static const int length = 16;
+	static Chunk *head;
 	int x, y;
 	WorldNode *tempField[length][length];
-	Chunk *adj[4];
+	Chunk *adj[] = { nullptr,nullptr,nullptr,nullptr};
 	Chunk() {
-
+		if (head == nullptr) {
+			head = this;
+			x = 0;
+			y = 0;
+		}
 	}
 	Chunk(int xpos, int ypos) {
 		x = xpos;
 		y = ypos;
-		//Generate(xpos, ypos);
+	}
+	void generate() {
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < length; j++) {
+				WorldNode temp(i + length * x, j + length * y);
+				tempField[i][j] = &temp;
+			}
+		}
 	}
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
