@@ -60,27 +60,37 @@ public:
 	static const int length = 16;
 	static Chunk *head;
 	int x, y;
-	WorldNode *tempField[length][length];
+	//WorldNode *tempField[length][length];
+	std::vector<std::vector<WorldNode *>> tempField;
 	Chunk *adj[] = { nullptr,nullptr,nullptr,nullptr};
 	Chunk() {
 		if (head == nullptr) {
 			head = this;
-			x = 0;
-			y = 0;
-		}
+			Chunk(0, 0);
+		} 
 	}
 	Chunk(int xpos, int ypos) {
 		x = xpos;
 		y = ypos;
+		generate(this);
 	}
-	void generate() {
-		for (int i = 0; i < length; i++) {
-			for (int j = 0; j < length; j++) {
-				WorldNode temp(i + length * x, j + length * y);
-				tempField[i][j] = &temp;
+	static Chunk* generate(Chunk *c) {
+		for (int i = 0; i < c->tempField.size(); i++) {
+			for (int j = 0; j < c->tempField.at(i).size(); j++) {
+				WorldNode temp(i + length * c->x, j + length * c->y);
+				c->tempField.at(i).at(j) = &temp;
 			}
 		}
+		return c;
 	}
+	static std::vector<std::vector<WorldNode *>> clip(int x, int y) {
+		//Return a little square portion of the array
+	}
+	static bool square(Chunk *c) {
+		// maybe
+		return false;
+	}
+	//traversing array and infinite generation
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
