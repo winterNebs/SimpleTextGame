@@ -74,14 +74,13 @@ public:
 		y = ypos;
 		generate(this);
 	}
-	static Chunk* generate(Chunk *c) {
+	static void generate(Chunk *c) {
 		for (int i = 0; i < c->tempField.size(); i++) {
 			for (int j = 0; j < c->tempField.at(i).size(); j++) {
 				WorldNode temp(i + length * c->x, j + length * c->y);
 				c->tempField.at(i).at(j) = &temp;
 			}
 		}
-		return c;
 	}
 	static std::vector<std::vector<WorldNode *>> clip(int x, int y) {
 		//Return a little square portion of the array
@@ -90,6 +89,36 @@ public:
 		// maybe
 		return false;
 	}
+	static void verifiy(int xpos, int pos, int r) {
+
+	}
+	static Chunk* travel(Chunk *c, int xpos, int ypos, int xdist, int ydist) {
+		if (c != nullptr) {
+			//Recursion goes here
+		}
+		else { //This is probably wrong 
+			int realx, realy;
+			if (xpos < 0) {
+				realx = (xpos - length) / length;
+			}
+			else {
+				realx = xpos / length;
+			}
+			if (ypos < 0) {
+				realy = (ypos - length) / length;
+			}
+			else {
+				realy = ypos / length;	
+			}
+			Chunk temp(realx, realy);
+			generate(&temp);
+			return &temp;
+		}
+	}
+	static void repair() {
+		//fix the node linkage;
+	}
+
 	//traversing array and infinite generation
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
