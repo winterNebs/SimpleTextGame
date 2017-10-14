@@ -9,6 +9,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stack>
 enum direction {
 	up, left, down, right
 };
@@ -55,16 +56,18 @@ public:
 		WorldNode(NULL, NULL);
 	}
 };
-class Chunk {
+class Chunk { 
+	/*TODO:
+	-hashing (x+y)% prime
+	-check size
+	-*/
 public:
+	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
 	static Chunk *head;
 	static int bounds[4];
-	bool visited;
 	int x, y;
-	//WorldNode *tempField[length][length];
 	std::vector<std::vector<WorldNode *>> tempField;
-	Chunk *adj[] = { nullptr,nullptr,nullptr,nullptr};
 	Chunk() {
 		if (head == nullptr) {
 			head = this;
@@ -75,7 +78,6 @@ public:
 		} 
 	}
 	Chunk(int xpos, int ypos) {
-		visited = false;
 		x = xpos;
 		y = ypos;
 		if (x > bounds[right]) {
@@ -144,6 +146,12 @@ public:
 				}
 			}
 	}
+	static void resize(int size) {//resize hashmap
+		std::stack<Chunk*> *newHashmap = new std::stack<Chunk*>[size];
+		//Copy
+		delete[]hashmap;
+		hashmap = newHashmap;
+	}
 	//traversing array and infinite generation
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
@@ -174,6 +182,7 @@ public:
 		}
 	}*/
 };
+std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[137];
 void input() {
 	if (_kbhit()) {
 		if (_getch() == 224) {
@@ -190,7 +199,12 @@ void input() {
 		}
 	}
 }
+
+
 int main(){
+	
+
+
 	srand(time(NULL));
 	while (1) {
 		Sleep(1);
