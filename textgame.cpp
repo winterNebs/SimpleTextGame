@@ -59,6 +59,8 @@ class Chunk {
 public:
 	static const int length = 16;
 	static Chunk *head;
+	static int bounds[4];
+	bool visited;
 	int x, y;
 	//WorldNode *tempField[length][length];
 	std::vector<std::vector<WorldNode *>> tempField;
@@ -67,11 +69,27 @@ public:
 		if (head == nullptr) {
 			head = this;
 			Chunk(0, 0);
+			for (auto i: bounds) {
+				i = 0;
+			}
 		} 
 	}
 	Chunk(int xpos, int ypos) {
+		visited = false;
 		x = xpos;
 		y = ypos;
+		if (x > bounds[right]) {
+			bounds[right] = x;
+		}
+		else if(x < bounds[left]) {
+			bounds[left] = x;
+		}
+		if (y > bounds[down]) {
+			bounds[down] = y;
+		}
+		else if (y < bounds[up]) {
+			bounds[up] = y;
+		}
 		generate(this);
 	}
 	static void generate(Chunk *c) {
@@ -90,35 +108,42 @@ public:
 		return false;
 	}
 	static void verifiy(int xpos, int pos, int r) {
-
+		//make sure they dont have same number
 	}
 	static Chunk* travel(Chunk *c, int xpos, int ypos, int xdist, int ydist) {
 		if (c != nullptr) {
 			//Recursion goes here
 		}
 		else { //This is probably wrong 
-			int realx, realy;
-			if (xpos < 0) {
-				realx = (xpos - length) / length;
-			}
-			else {
-				realx = xpos / length;
-			}
-			if (ypos < 0) {
-				realy = (ypos - length) / length;
-			}
-			else {
-				realy = ypos / length;	
-			}
-			Chunk temp(realx, realy);
+			Chunk temp(nodetochunk(xpos), nodetochunk(ypos));
 			generate(&temp);
 			return &temp;
 		}
 	}
+	static int nodetochunk(int i) {
+		if (i < 0) {
+			return (i - length) / length;
+		}
+		else {
+			return i / length;
+		}
+	}
 	static void repair() {
 		//fix the node linkage;
+		//make sure they dont have same number
 	}
+	static int prime(int prev) {	//Prime num calc
+		for (int i = prev; i< INT_MAX; i++)
+			for (int j = 2; j*j <= i; j++)
+			{
+				if (i % j == 0)
+					break;
+				else if (j + 1 > sqrt(i)) {
+					return i;
 
+				}
+			}
+	}
 	//traversing array and infinite generation
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
