@@ -62,6 +62,7 @@ class Chunk {
 	-check size
 	-*/
 public:
+	static int primenum;
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
 	static Chunk *head;
@@ -92,7 +93,13 @@ public:
 		else if (y < bounds[up]) {
 			bounds[up] = y;
 		}
+		hash();
 		generate(this);
+	}
+	void hash() {
+		
+		int index = (abs(x) + abs(y)) % primenum;
+		hashmap[index].push(this);
 	}
 	static void generate(Chunk *c) {
 		for (int i = 0; i < c->tempField.size(); i++) {
@@ -104,10 +111,6 @@ public:
 	}
 	static std::vector<std::vector<WorldNode *>> clip(int x, int y) {
 		//Return a little square portion of the array
-	}
-	static bool square(Chunk *c) {
-		// maybe
-		return false;
 	}
 	static void verifiy(int xpos, int pos, int r) {
 		//make sure they dont have same number
@@ -131,7 +134,6 @@ public:
 		}
 	}
 	static void repair() {
-		//fix the node linkage;
 		//make sure they dont have same number
 	}
 	static int prime(int prev) {	//Prime num calc
@@ -149,6 +151,9 @@ public:
 	static void resize(int size) {//resize hashmap
 		std::stack<Chunk*> *newHashmap = new std::stack<Chunk*>[size];
 		//Copy
+		for (int i = 0; i < primenum; i++) {
+			newHashmap[i] = hashmap[i];
+		}
 		delete[]hashmap;
 		hashmap = newHashmap;
 	}
@@ -182,7 +187,8 @@ public:
 		}
 	}*/
 };
-std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[137];
+int Chunk::primenum = 137;
+std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
 void input() {
 	if (_kbhit()) {
 		if (_getch() == 224) {
