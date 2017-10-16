@@ -13,11 +13,28 @@
 enum direction {
 	up, left, down, right
 };
-class Entity {
+
+class Tile{
 public:
 	char display;
 	int x;
 	int y;
+	bool walkable;
+	Tile() {
+		
+	}
+	Tile(char c, int xpos, int ypos) {
+		display = c;
+		x = xpos;
+		y = ypos;
+		walkable = true;
+	}
+	Tile(int xpos, int ypos) {
+		Tile(rand() * 223 + 32, xpos, ypos);
+	}
+};
+class Entity : public Tile{
+public:
 	void move(int dir) {
 		switch (dir) {
 		case up: y -= 1;
@@ -28,56 +45,31 @@ public:
 			break;
 		case right: x += 1;
 			break;
-
 		}
 	}
 };
-class Tile : public Entity {
+class Player : public Entity{
 public:
-	bool walkable;
-	Tile() {
-		Tile(rand() * 223 + 32, 0, 0);
-	}
-	Tile(char c, int xpos, int ypos) {
-		display = c;
-		x = xpos;
-		y = ypos;
-	}
-};
-class WorldNode {
-public:
-	Tile t;
-	int x;
-	int y;
-	WorldNode(int xpos, int ypos) {
-		t = Tile(rand() * 223 + 32, xpos, ypos);
-	}
-	WorldNode() {
-		WorldNode(NULL, NULL);
+	Player() {
+		x = 0;
+		y = 0;
+		display = 135;
+		walkable = false;
 	}
 };
 class Chunk { 
-	/*TODO:
-	-hashing (x+y)% prime
-	-check size
-	-*/
 public:
+	static const int viewdist = 8;//number of squares away from player not including player  (17x17 for 8)
 	static int primenum;
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
-	static Chunk *head;
 	static int bounds[4];
 	int x, y;
-	std::vector<std::vector<WorldNode *>> tempField;
+	static Player p;
+	std::vector<std::vector<Tile *>> tempField;
 	Chunk() {
-		if (head == nullptr) {
-			head = this;
 			Chunk(0, 0);
-			for (auto i: bounds) {
-				i = 0;
-			}
-		} 
-	}
+	} 
 	Chunk(int xpos, int ypos) {
 		x = xpos;
 		y = ypos;
@@ -104,25 +96,9 @@ public:
 	static void generate(Chunk *c) {
 		for (int i = 0; i < c->tempField.size(); i++) {
 			for (int j = 0; j < c->tempField.at(i).size(); j++) {
-				WorldNode temp(i + length * c->x, j + length * c->y);
+				Tile temp(i + length * c->x, j + length * c->y);
 				c->tempField.at(i).at(j) = &temp;
 			}
-		}
-	}
-	static std::vector<std::vector<WorldNode *>> clip(int x, int y) {
-		//Return a little square portion of the array
-	}
-	static void verifiy(int xpos, int pos, int r) {
-		//make sure they dont have same number
-	}
-	static Chunk* travel(Chunk *c, int xpos, int ypos, int xdist, int ydist) {
-		if (c != nullptr) {
-			//Recursion goes here
-		}
-		else { //This is probably wrong 
-			Chunk temp(nodetochunk(xpos), nodetochunk(ypos));
-			generate(&temp);
-			return &temp;
 		}
 	}
 	static int nodetochunk(int i) {
@@ -133,9 +109,6 @@ public:
 			return i / length;
 		}
 	}
-	static void repair() {
-		//make sure they dont have same number
-	}
 	static int prime(int prev) {	//Prime num calc
 		for (int i = prev; i< INT_MAX; i++)
 			for (int j = 2; j*j <= i; j++)
@@ -144,7 +117,6 @@ public:
 					break;
 				else if (j + 1 > sqrt(i)) {
 					return i;
-
 				}
 			}
 	}
@@ -157,6 +129,20 @@ public:
 		delete[]hashmap;
 		hashmap = newHashmap;
 	}
+	static void draw() {
+		//First get player position
+		//Calculate radius for terrain genertation (Chunks only)
+		int chunkx = nodetochunk(p.x);
+		int chunky = nodetochunk(p.y);
+		std::vector<std::vector<Chunk>> needtoload;
+		
+		//probablyt can make better
+
+		//Calculate view distance and required chunks
+		//Make a sectioned array
+			//Find top left most chunk, take part
+			//etc etc
+	} 
 	//traversing array and infinite generation
 	/*void Generate(int xpos, int ypos) {
 		for (int i = 0; i < length; i++) {
@@ -189,6 +175,7 @@ public:
 };
 int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
+Player Chunk::p = Player();
 void input() {
 	if (_kbhit()) {
 		if (_getch() == 224) {
@@ -205,13 +192,9 @@ void input() {
 		}
 	}
 }
-
-
 int main(){
-	
 
-
-	srand(time(NULL));
+	srand(time(NULL));	
 	while (1) {
 		Sleep(1);
 	}
