@@ -64,6 +64,7 @@ public:
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
 	static int bounds[4];
+	int tbounds[4];
 	int x, y;
 	static Player p;
 	std::vector<std::vector<Tile *>> tempField;
@@ -73,6 +74,12 @@ public:
 	Chunk(int xpos, int ypos) {
 		x = xpos;
 		y = ypos;
+		/*
+		tbounds[up] = y;
+		tbounds[left] = x;
+		tbounds[down] = y + length - 1;
+		tbounds[right] = x + length - 1;
+		
 		if (x > bounds[right]) {
 			bounds[right] = x;
 		}
@@ -85,11 +92,11 @@ public:
 		else if (y < bounds[up]) {
 			bounds[up] = y;
 		}
+		*/
 		hash();
 		generate(this);
 	}
 	void hash() {
-		
 		int index = (abs(x) + abs(y)) % primenum;
 		hashmap[index].push(this);
 	}
@@ -108,6 +115,10 @@ public:
 		else {
 			return i / length;
 		}
+	}
+	static int chunktonode(int c, int r) {//(c)hunk val; (r)elative tile val
+		return (r + c * length);
+		//MAybe code for negative idk rn ahdhearuherhuer
 	}
 	static int prime(int prev) {	//Prime num calc
 		for (int i = prev; i< INT_MAX; i++)
@@ -135,7 +146,19 @@ public:
 		int chunkx = nodetochunk(p.x);
 		int chunky = nodetochunk(p.y);
 		std::vector<std::vector<Chunk>> needtoload;
-		
+		int loaddir[]{1,2};
+		if (p.x % length + viewdist > length) {// verifiy for neg
+			//Add x+
+		}
+		if (abs(p.x % length - viewdist) > length) {
+			//add -x
+		}
+		if (p.y % length + viewdist > length) {// verifiy for neg
+			//Add y+
+		}
+		if (abs(p.y % length - viewdist) > length) {
+			//add -y
+		}
 		//probablyt can make better
 
 		//Calculate view distance and required chunks
@@ -143,35 +166,6 @@ public:
 			//Find top left most chunk, take part
 			//etc etc
 	} 
-	//traversing array and infinite generation
-	/*void Generate(int xpos, int ypos) {
-		for (int i = 0; i < length; i++) {
-			for (int j = 0; j < length; j++) {
-				WorldNode temp(i+xpos,j+ypos);
-				tempField[i][j] = &temp;
-				if (i == 0) {
-					tempField[i][j]->dirs[3] = nullptr;
-				}
-				else {
-					tempField[i][j]->dirs[3] = tempField[i - 1][j];
-					if (i == length - 1) {
-						tempField[i][j]->dirs[1] = nullptr;
-					}
-					tempField[i - 1][j]->dirs[1] = tempField[i][j];
-				}
-				if (j == 0) {
-					tempField[i][j]->dirs[0] = nullptr;
-				}
-				else{
-					tempField[i][j]->dirs[0] = tempField[i][j - 1];
-					if (j == length - 1) {
-						tempField[i][j]->dirs[2] = nullptr;
-					}
-					tempField[i][j - 1]->dirs[2] = tempField[i][j];
-				}
-			}
-		}
-	}*/
 };
 int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
