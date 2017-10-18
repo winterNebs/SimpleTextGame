@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stack>
+//Garbage collection when.
 enum direction {
 	up, left, down, right
 };
@@ -73,36 +74,22 @@ public:
 	static int primenum;
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
-	static int bounds[4];
 	int tbounds[4];
 	int x, y;
 	static Player p;
 	std::vector<std::vector<Tile *>> tempField;
 	Chunk() {
+		p = Player();
 			Chunk(0, 0);
 	} 
 	Chunk(int xpos, int ypos) {
+		tempField = std::vector<std::vector<Tile *>>();
 		x = xpos;
 		y = ypos;
-		
 		tbounds[up] = chunktonode(y, 0);
 		tbounds[left] = chunktonode(x, 0);
 		tbounds[down] = chunktonode(y, length - 1);
 		tbounds[right] = chunktonode(x, length - 1);
-		/*
-		if (x > bounds[right]) {
-			bounds[right] = x;
-		}
-		else if(x < bounds[left]) {
-			bounds[left] = x;
-		}
-		if (y > bounds[down]) {
-			bounds[down] = y;
-		}
-		else if (y < bounds[up]) {
-			bounds[up] = y;
-		}
-		*/
 		hash();
 		generate(this);
 	}
@@ -184,7 +171,8 @@ public:
 			for (int j = loaddir[up]; j <= loaddir[down]; i++) {
 				Chunk* c = get(nodetochunk(p.x) + i, nodetochunk(p.y) + j);
 				if (c == nullptr) {
-					generate(c);
+					std::cout << nodetochunk(0);
+					c = new Chunk((nodetochunk(p.x) + i), (nodetochunk(p.y) + j));
 				}
 				//Grab parts of the array and add to big boy array
 				for (int a = 0; a < c->tempField.size(); a++) {
@@ -199,6 +187,12 @@ public:
 					}
 				}
 			}
+		}
+		for (int i = 0; i < (2 * viewdist) + 1; i++) {
+			for (int j = 0; j < (2 * viewdist) + 1; j++) {
+				std::cout << viewField[i][j]->display;
+			}
+			std::cout << std::endl;
 		}
 	} 
 };
