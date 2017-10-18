@@ -149,7 +149,7 @@ public:
 	}
 	static Chunk* get(int chunkx, int chunky) {
 		for (int i = 0; i < primenum; i++) { //why are you like this
-			if (!hashmap[i].empty) {
+			if (!hashmap[i].empty()) {
 				for (std::stack<Chunk*> dump = hashmap[i]; !dump.empty(); dump.pop()) {
 					if (dump.top()->x == chunkx && dump.top()->y == chunky){
 						return dump.top();
@@ -161,7 +161,8 @@ public:
 	}
 	static void draw() {
 		//First get player position
-		//Calculate radius for terrain genertation (Chunks only)		
+		//Calculate radius for terrain genertation (Chunks only)
+		Tile *viewField[2*viewdist+1][2*viewdist+1];
 		int dist[]{ p.y - viewdist,
 			p.x - viewdist,
 			p.y + viewdist,
@@ -181,10 +182,22 @@ public:
 		//Calculate view distance and required chunks
 		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
 			for (int j = loaddir[up]; j <= loaddir[down]; i++) {
-				if (get(nodetochunk(p.x) + i, nodetochunk(p.y) + j) == nullptr) {
-					generate(get(nodetochunk(p.x) + i, nodetochunk(p.y) + j));
+				Chunk* c = get(nodetochunk(p.x) + i, nodetochunk(p.y) + j);
+				if (c == nullptr) {
+					generate(c);
 				}
 				//Grab parts of the array and add to big boy array
+				for (int a = 0; a < c->tempField.size(); a++) {
+					for (int b = 0; b < c->tempField.at(a).size(); b++) {
+						if (c->tempField.at(a).at(b)->x > dist[left] && 
+							c->tempField.at(a).at(b)->x < dist[right] &&
+							c->tempField.at(a).at(b)->y > dist[up] &&
+							c->tempField.at(a).at(b)->y < dist[down]) {
+							viewField[c->tempField.at(a).at(b)->x - dist[left]]
+								[c->tempField.at(a).at(b)->y - dist[up]] = c->tempField.at(a).at(b);
+						}
+					}
+				}
 			}
 		}
 	} 
@@ -209,9 +222,10 @@ void input() {
 	}
 }
 int main(){
-
+	Chunk first();
 	srand(time(NULL));	
 	while (1) {
+		Chunk::draw();
 		Sleep(1);
 	}
     return 0;
