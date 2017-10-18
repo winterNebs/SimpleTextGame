@@ -13,7 +13,17 @@
 enum direction {
 	up, left, down, right
 };
-
+class Point {// END MY SUFFERING
+public:
+	int x, y;
+	Point() {
+		Point(NULL, NULL);
+	}
+	Point(int xd, int yd) {
+		x = xd;
+		y = yd;
+	}
+};
 class Tile{
 public:
 	char display;
@@ -74,12 +84,12 @@ public:
 	Chunk(int xpos, int ypos) {
 		x = xpos;
 		y = ypos;
-		/*
-		tbounds[up] = y;
-		tbounds[left] = x;
-		tbounds[down] = y + length - 1;
-		tbounds[right] = x + length - 1;
 		
+		tbounds[up] = chunktonode(y, 0);
+		tbounds[left] = chunktonode(x, 0);
+		tbounds[down] = chunktonode(y, length - 1);
+		tbounds[right] = chunktonode(x, length - 1);
+		/*
 		if (x > bounds[right]) {
 			bounds[right] = x;
 		}
@@ -109,16 +119,13 @@ public:
 		}
 	}
 	static int nodetochunk(int i) {
-		if (i < 0) {
-			return (i - length) / length;
-		}
-		else {
-			return i / length;
-		}
+		return (i - length + 1) / length;
 	}
 	static int chunktonode(int c, int r) {//(c)hunk val; (r)elative tile val
 		return (r + c * length);
-		//MAybe code for negative idk rn ahdhearuherhuer
+	}
+	static int relativenode(int c, int a) {
+		return (a - c*length);
 	}
 	static int prime(int prev) {	//Prime num calc
 		for (int i = prev; i< INT_MAX; i++)
@@ -140,31 +147,46 @@ public:
 		delete[]hashmap;
 		hashmap = newHashmap;
 	}
+	static Chunk* get(int chunkx, int chunky) {
+		for (int i = 0; i < primenum; i++) { //why are you like this
+			if (!hashmap[i].empty) {
+				for (std::stack<Chunk*> dump = hashmap[i]; !dump.empty(); dump.pop()) {
+					if (dump.top()->x == chunkx && dump.top()->y == chunky){
+						return dump.top();
+					}
+				}
+			}
+		}
+		return nullptr;
+	}
 	static void draw() {
 		//First get player position
-		//Calculate radius for terrain genertation (Chunks only)
-		int chunkx = nodetochunk(p.x);
-		int chunky = nodetochunk(p.y);
-		std::vector<std::vector<Chunk>> needtoload;
-		int loaddir[]{1,2};
-		if (p.x % length + viewdist > length) {// verifiy for neg
-			//Add x+
-		}
-		if (abs(p.x % length - viewdist) > length) {
-			//add -x
-		}
-		if (p.y % length + viewdist > length) {// verifiy for neg
-			//Add y+
-		}
-		if (abs(p.y % length - viewdist) > length) {
-			//add -y
-		}
-		//probablyt can make better
-
+		//Calculate radius for terrain genertation (Chunks only)		
+		int dist[]{ p.y - viewdist,
+			p.x - viewdist,
+			p.y + viewdist,
+			p.x + viewdist
+		};
+		Point cornerCoords[]{ Point(dist[left], dist[up]),		//Top left
+			Point(dist[left],dist[down]),						//Bottom left
+			Point(dist[right],dist[down]),						//Bottom right
+			Point(dist[right],dist[up])							//Top right
+		};
+		int loaddir[]{
+			ceil(abs(relativenode(nodetochunk(p.y), p.y) - viewdist) / length), //up 
+			ceil(abs(relativenode(nodetochunk(p.x), p.x) - viewdist) / length),	//left
+			ceil((relativenode(nodetochunk(p.y), p.y) + viewdist) / length),	//down
+			ceil((relativenode(nodetochunk(p.x), p.x) + viewdist) / length)		//right
+		};//Coordinates are (left + up, left + down, right + down, right + up)
 		//Calculate view distance and required chunks
-		//Make a sectioned array
-			//Find top left most chunk, take part
-			//etc etc
+		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
+			for (int j = loaddir[up]; j <= loaddir[down]; i++) {
+				if (get(nodetochunk(p.x) + i, nodetochunk(p.y) + j) == nullptr) {
+					generate(get(nodetochunk(p.x) + i, nodetochunk(p.y) + j));
+				}
+				//Grab parts of the array and add to big boy array
+			}
+		}
 	} 
 };
 int Chunk::primenum = 137;
