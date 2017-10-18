@@ -67,6 +67,12 @@ public:
 		display = 135;
 		walkable = false;
 	}
+	Player(int xpos, int ypos) {
+		x = xpos;
+		y = ypos;
+		display = 135;
+		walkable = false;
+	}
 };
 class Chunk { 
 public:
@@ -77,13 +83,14 @@ public:
 	int tbounds[4];
 	int x, y;
 	static Player p;
-	std::vector<std::vector<Tile *>> tempField;
+	//std::vector<std::vector<Tile *>> tempField;
+	Tile* tempField[length][length];
 	Chunk() {
-		p = Player();
-			Chunk(0, 0);
+		p = Player(0,0);
+		Chunk(0, 0);
 	} 
 	Chunk(int xpos, int ypos) {
-		tempField = std::vector<std::vector<Tile *>>();
+		//tempField = std::vector<std::vector<Tile *>>();
 		x = xpos;
 		y = ypos;
 		tbounds[up] = chunktonode(y, 0);
@@ -92,16 +99,19 @@ public:
 		tbounds[right] = chunktonode(x, length - 1);
 		hash();
 		generate(this);
+		//std::cout << "rows: " << sizeof(tempField) / sizeof(tempField[0]) << std::endl;
+		//std::cout << "col: " << sizeof(tempField[0]) / sizeof(Tile*) << std::endl;
+
 	}
 	void hash() {
 		int index = (abs(x) + abs(y)) % primenum;
 		hashmap[index].push(this);
+		//std::cout << "ADDED AT " << x << y;
 	}
 	static void generate(Chunk *c) {
-		for (int i = 0; i < c->tempField.size(); i++) {
-			for (int j = 0; j < c->tempField.at(i).size(); j++) {
-				Tile temp(i + length * c->x, j + length * c->y);
-				c->tempField.at(i).at(j) = &temp;
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < length; j++) {
+				c->tempField[i][j] = new Tile(i + length * c->x, j + length * c->y);
 			}
 		}
 	}
@@ -160,29 +170,29 @@ public:
 			Point(dist[right],dist[down]),						//Bottom right
 			Point(dist[right],dist[up])							//Top right
 		};
-		int loaddir[]{
+		int loaddir[]{//PROBLEM
 			ceil(abs(relativenode(nodetochunk(p.y), p.y) - viewdist) / length), //up 
 			ceil(abs(relativenode(nodetochunk(p.x), p.x) - viewdist) / length),	//left
 			ceil((relativenode(nodetochunk(p.y), p.y) + viewdist) / length),	//down
 			ceil((relativenode(nodetochunk(p.x), p.x) + viewdist) / length)		//right
 		};//Coordinates are (left + up, left + down, right + down, right + up)
-		//Calculate view distance and required chunks
+		
+		  //Calculate view distance and required chunks
 		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
 			for (int j = loaddir[up]; j <= loaddir[down]; i++) {
 				Chunk* c = get(nodetochunk(p.x) + i, nodetochunk(p.y) + j);
 				if (c == nullptr) {
-					std::cout << nodetochunk(0);
 					c = new Chunk((nodetochunk(p.x) + i), (nodetochunk(p.y) + j));
 				}
 				//Grab parts of the array and add to big boy array
-				for (int a = 0; a < c->tempField.size(); a++) {
-					for (int b = 0; b < c->tempField.at(a).size(); b++) {
-						if (c->tempField.at(a).at(b)->x > dist[left] && 
-							c->tempField.at(a).at(b)->x < dist[right] &&
-							c->tempField.at(a).at(b)->y > dist[up] &&
-							c->tempField.at(a).at(b)->y < dist[down]) {
-							viewField[c->tempField.at(a).at(b)->x - dist[left]]
-								[c->tempField.at(a).at(b)->y - dist[up]] = c->tempField.at(a).at(b);
+				for (int a = 0; a < length; a++) {
+					for (int b = 0; b <length; b++) {
+						if (c->tempField[a][b]->x > dist[left] && 
+							c->tempField[a][b]->x < dist[right] &&
+							c->tempField[a][b]->y > dist[up] &&
+							c->tempField[a][b]->y < dist[down]) {
+							viewField[c->tempField[a][b]->x - dist[left]]
+								[c->tempField[a][b]->y - dist[up]] = c->tempField[a][b];
 						}
 					}
 				}
@@ -216,7 +226,7 @@ void input() {
 	}
 }
 int main(){
-	Chunk first();
+	Chunk first(0,0);
 	srand(time(NULL));	
 	while (1) {
 		Chunk::draw();
