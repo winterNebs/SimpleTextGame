@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stack>
+#include <string>
 //Garbage collection when.
 enum direction {
 	up, left, down, right
@@ -61,7 +62,8 @@ public:
 };
 class Chunk { 
 public:
-	static const int viewdist = 8;//number of squares away from player not including player  (17x17 for 8)
+	static const int viewdisty = 8;//number of squares away from player not including player  (17x17 for 8)
+	static const int viewdistx = 16;
 	static int primenum;
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
@@ -129,12 +131,10 @@ public:
 		hashmap = newHashmap;
 	}
 	static Chunk* get(int chunkx, int chunky) {
-		for (int i = 0; i < primenum; i++) { //why are you like this
-			if (!hashmap[i].empty()) {
-				for (std::stack<Chunk*> dump = hashmap[i]; !dump.empty(); dump.pop()) {
-					if (dump.top()->x == chunkx && dump.top()->y == chunky){
-						return dump.top();
-					}
+		if (!hashmap[(abs(chunkx) + abs(chunky)) % primenum].empty()) {
+			for (std::stack<Chunk*> dump = hashmap[(abs(chunkx) + abs(chunky)) % primenum]; !dump.empty(); dump.pop()) {
+				if (dump.top()->x == chunkx && dump.top()->y == chunky) {
+					return dump.top();
 				}
 			}
 		}
@@ -143,11 +143,11 @@ public:
 	static void draw() {
 		//First get player position
 		//Calculate radius for terrain genertation (Chunks only)
-		Tile *viewField[2*viewdist+1][2*viewdist+1];
-		int dist[]{ p.y - viewdist,
-			p.x - viewdist,
-			p.y + viewdist,
-			p.x + viewdist
+		Tile *viewField[2*viewdistx+1][2*viewdisty+1];
+		int dist[]{ p.y - viewdisty,
+			p.x - viewdistx,
+			p.y + viewdisty,
+			p.x + viewdistx
 		};
 		Point cornerCoords[]{ Point(dist[left], dist[up]),		//Top left
 			Point(dist[left],dist[down]),						//Bottom left
@@ -155,15 +155,15 @@ public:
 			Point(dist[right],dist[up])							//Top right
 		};
 		int loaddir[]{//PROBLEM
-			ceil(abs(relativenode(nodetochunk(p.y), p.y) - viewdist) / length), //up 
-			ceil(abs(relativenode(nodetochunk(p.x), p.x) - viewdist) / length),	//left
-			ceil((relativenode(nodetochunk(p.y), p.y) + viewdist) / length),	//down
-			ceil((relativenode(nodetochunk(p.x), p.x) + viewdist) / length)		//right
+			-ceil((float)(abs(relativenode(nodetochunk(p.y), p.y) - viewdisty)) / length),	//up 
+			-ceil((float)(abs(relativenode(nodetochunk(p.x), p.x) - viewdistx)) / length),	//left
+			ceil((float)(relativenode(nodetochunk(p.y), p.y) + viewdisty) / length),			//down
+			ceil((float)(relativenode(nodetochunk(p.x), p.x) + viewdistx) / length)			//right
 		};//Coordinates are (left + up, left + down, right + down, right + up)
-		
+	
 		  //Calculate view distance and required chunks
 		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
-			for (int j = loaddir[up]; j <= loaddir[down]; i++) {
+			for (int j = loaddir[up]; j <= loaddir[down]; j++) {
 				Chunk* c = get(nodetochunk(p.x) + i, nodetochunk(p.y) + j);
 				if (c == nullptr) {
 					c = new Chunk((nodetochunk(p.x) + i), (nodetochunk(p.y) + j));
@@ -171,10 +171,10 @@ public:
 				//Grab parts of the array and add to big boy array
 				for (int a = 0; a < length; a++) {
 					for (int b = 0; b <length; b++) {
-						if (c->tempField[a][b]->x > dist[left] && 
-							c->tempField[a][b]->x < dist[right] &&
-							c->tempField[a][b]->y > dist[up] &&
-							c->tempField[a][b]->y < dist[down]) {
+						if (c->tempField[a][b]->x >= dist[left] && 
+							c->tempField[a][b]->x <= dist[right] &&
+							c->tempField[a][b]->y >= dist[up] &&
+							c->tempField[a][b]->y <= dist[down]) {
 							viewField[c->tempField[a][b]->x - dist[left]]
 								[c->tempField[a][b]->y - dist[up]] = c->tempField[a][b];
 						}
@@ -182,12 +182,15 @@ public:
 				}
 			}
 		}
-		for (int i = 0; i < (2 * viewdist) + 1; i++) {
-			for (int j = 0; j < (2 * viewdist) + 1; j++) {
-				std::cout << viewField[i][j]->display;
+		system("CLS");
+		std::string output = "";
+		for (int i = 0; i < (2 * viewdisty) + 1; i++) {
+			for (int j = 0; j < (2 * viewdistx) + 1; j++) {
+				output += viewField[j][i]->display;
 			}
-			std::cout << std::endl;
+			output += "\n";
 		}
+		std::cout << output;
 	} 
 };
 int Chunk::primenum = 137;
@@ -214,7 +217,7 @@ int main(){
 	srand(time(NULL));	
 	while (1) {
 		Chunk::draw();
-		Sleep(1);
+		Sleep(1000);
 	}
     return 0;
 }
