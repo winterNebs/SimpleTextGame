@@ -17,8 +17,7 @@ enum direction {
 class Point {// END MY SUFFERING
 public:
 	int x, y;
-	Point() {
-		Point(NULL, NULL);
+	Point() : Point(NULL,NULL){
 	}
 	Point(int xd, int yd) {
 		x = xd;
@@ -31,18 +30,9 @@ public:
 	int x;
 	int y;
 	bool walkable;
-	Tile() {
-		
-	}
-	Tile(char c, int xpos, int ypos) {
-		display = c;
-		x = xpos;
-		y = ypos;
-		walkable = true;
-	}
-	Tile(int xpos, int ypos) {
-		Tile(rand() * 223 + 32, xpos, ypos);
-	}
+	Tile() : Tile(0,0){	}
+	Tile(int xpos, int ypos) : Tile(rand() * 223 + 32, xpos, ypos) {	}
+	Tile(char c, int xpos, int ypos) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
 };
 class Entity : public Tile{
 public:
@@ -61,13 +51,8 @@ public:
 };
 class Player : public Entity{
 public:
-	Player() {
-		x = 0;
-		y = 0;
-		display = 135;
-		walkable = false;
-	}
-	Player(int xpos, int ypos) {
+	Player() : Player(0,0){	}
+	Player(int xpos, int ypos){
 		x = xpos;
 		y = ypos;
 		display = 135;
@@ -85,9 +70,8 @@ public:
 	static Player p;
 	//std::vector<std::vector<Tile *>> tempField;
 	Tile* tempField[length][length];
-	Chunk() {
+	Chunk() : Chunk(0, 0){
 		p = Player(0,0);
-		Chunk(0, 0);
 	} 
 	Chunk(int xpos, int ypos) {
 		//tempField = std::vector<std::vector<Tile *>>();
