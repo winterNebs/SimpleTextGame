@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stack>
 #include <string>
+#include "PerlinNoise.hpp"
 //Garbage collection when.
 enum direction {up, left, down, right};
 enum wallstypes {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
@@ -23,9 +24,7 @@ enum fencetype {svert = 179, shor = 196, scross = 197};
 class Point {// END MY SUFFERING
 public:
 	int x, y;
-	Point() : Point(NULL,NULL){
-	}
-	Point(int xd, int yd) {
+	Point(int xd = NULL, int yd = NULL) {
 		x = xd;
 		y = yd;
 	}
@@ -36,9 +35,7 @@ public:
 	int x;
 	int y;
 	bool walkable;
-	Tile() : Tile(0,0){	}//rand() * 223 + 32
-	Tile(int xpos, int ypos) : Tile('#', xpos, ypos) {	}
-	Tile(char c, int xpos, int ypos) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
+	Tile(char c = '#', int xpos = 5, int ypos = 5) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
 };
 class Entity : public Tile{
 public:
@@ -60,22 +57,32 @@ public:
 };
 class Water : public Tile {
 public:
-	Water(){}
-	Water(int xpos, int ypos) : Tile('~', xpos, ypos){
+	Water(int xpos = 5, int ypos = 5) : Tile('~', xpos, ypos){
 		walkable = false;
 	}
 };
 class Wall : public Tile {
 public:
-	Wall () {}
-	Wall(int xpos, int ypos) : Tile('~', xpos, ypos) {
+	Wall(int xpos = 5, int ypos = 5) : Tile('~', xpos, ypos) {
 		walkable = false;
+	}	
+};
+class Structure {
+public:
+	int w, h, x, y;
+	bool doors[4];
+	std::vector<std::vector<Tile*>> tiles;
+	Structure(int xpos = 5, int ypos = 5, int wid = 5, int hei = 5) : x{ xpos }, y{ ypos }, w{ wid }, h{ hei } {
+		for (auto i: doors) {
+			i = true;
+		}
+		//Do stuff here
 	}
+
 };
 class Player : public Entity{
 public:
-	Player() : Player(0,0){	}
-	Player(int xpos, int ypos){
+	Player(int xpos = 0, int ypos = 0){
 		x = xpos;
 		y = ypos;
 		display = 135;
@@ -121,6 +128,11 @@ public:
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
 				c->tempField[i][j] = new Tile(i + length * c->x, j + length * c->y);
+				//std::cout << siv::PerlinNoise().noise(1);
+				//Get distance from 0,0
+				//
+				
+
 			}
 		}
 	}
@@ -221,6 +233,7 @@ public:
 		std::cout << output;
 	} 
 };
+int seed = 1111;
 int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
 Player Chunk::p = Player();
@@ -250,11 +263,20 @@ void input() {
 	}
 }
 int main(){
+	siv::PerlinNoise perlin = siv::PerlinNoise(seed);
+	//std::cout << (double)perlin.octaveNoise(i, j, 100);
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			std::cout << std::cout.precision(15) << perlin.octaveNoise(i, j,10) << " ";
+		}
+		std::cout << std::endl;
+	}
 	Chunk first;
 	srand(time(NULL));	
+
 	while (1) {
-		input();
-		Chunk::draw();
+		//input();
+		//Chunk::draw();
 		Sleep(1);
 	}
     return 0;
