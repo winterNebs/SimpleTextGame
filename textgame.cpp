@@ -12,11 +12,18 @@
 #include <stack>
 #include <string>
 #include "PerlinNoise.hpp"
+#include <iomanip>
 //Garbage collection when.
+
+int seed = 420;
 enum direction {up, left, down, right};
 enum wallstypes {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
 enum groundtype {light = 176, med = 177, dark =178};
 enum fencetype {svert = 179, shor = 196, scross = 197};
+template <class Type>
+inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
+	return (x < min) ? min : ((max < x) ? max : x);
+}
 //Todo Noise:
 //Distance from 00 can increase intensity of noise
 //I guess each structure/tile can have differrent noise value;
@@ -106,7 +113,6 @@ public:
 		ents.push_back(&p);
 	} 
 	Chunk(int xpos, int ypos) {
-		//tempField = std::vector<std::vector<Tile *>>();
 		x = xpos;
 		y = ypos;
 		tbounds[up] = chunktonode(y, 0);
@@ -115,24 +121,28 @@ public:
 		tbounds[right] = chunktonode(x, length - 1);
 		hash();
 		generate(this);
-		//std::cout << "rows: " << sizeof(tempField) / sizeof(tempField[0]) << std::endl;
-		//std::cout << "col: " << sizeof(tempField[0]) / sizeof(Tile*) << std::endl;
-
 	}
 	void hash() {
 		int index = (abs(x) + abs(y)) % primenum;
 		hashmap[index].push(this);
-		//std::cout << "ADDED AT " << x << y;
 	}
 	static void generate(Chunk *c) {
+		double frequency = sqrt((c->x * c->x) + (c->y * c->y));
+		frequency = Clamp(frequency, 0.1, 64.0);
+		int octaves = sqrt((c->x * c->x) + (c->y * c->y));
+		octaves = Clamp(octaves, 1, 16);
+		const siv::PerlinNoise perlin(seed);
+		const double fx = length / frequency;
+		const double fy = length / frequency;
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
-				c->tempField[i][j] = new Tile(i + length * c->x, j + length * c->y);
-				//std::cout << siv::PerlinNoise().noise(1);
-				//Get distance from 0,0
-				//
-				
-
+				double noise = perlin.octaveNoise0_1(j / fx, i / fy, octaves);
+				if (noise < .5) {
+					c->tempField[i][j] = new Tile(' ', i + length * c->x, j + length * c->y);
+				}
+				else {
+					c->tempField[i][j] = new Tile(noise * 300, i + length * c->x, j + length * c->y);
+				}
 			}
 		}
 	}
@@ -233,7 +243,6 @@ public:
 		std::cout << output;
 	} 
 };
-int seed = 1111;
 int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
 Player Chunk::p = Player();
@@ -263,20 +272,13 @@ void input() {
 	}
 }
 int main(){
-	siv::PerlinNoise perlin = siv::PerlinNoise(seed);
-	//std::cout << (double)perlin.octaveNoise(i, j, 100);
-	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < 10; j++) {
-			std::cout << std::cout.precision(15) << perlin.octaveNoise(i, j,10) << " ";
-		}
-		std::cout << std::endl;
-	}
+
 	Chunk first;
 	srand(time(NULL));	
 
 	while (1) {
-		//input();
-		//Chunk::draw();
+		input();
+		Chunk::draw();
 		Sleep(1);
 	}
     return 0;
