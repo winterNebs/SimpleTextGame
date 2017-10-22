@@ -47,50 +47,33 @@ public:
 	void interpret(double noise) { //Noise is from 0-1
 		type = abs(noise - 0.5); 
 		walkable = true;
-		if (type < .1) { // clean ground
+		if (type < .01) { // clean ground
 			display = blank;
 		}
-		else if (type < .15){
+		else if (type < .05){
 			display = light;
 		}
-		else if (type < .2) {
+		else if (type < .1) {
 			display = med;
 		}
 		else if (type < .25) {
 			display = dark;
-			walkable = false;
 		}
 		else if (type < .3) {
 			display = solid;
-			walkable = false;
 		}
-		else {
+		else if (type < .35){
+			display = 126;
+		}
+		else if (type < .4) {
+			display = 35;
 		}
 	}
 };
 class Entity : public Tile{
 public:
 	Entity() {	}
-	void move(direction dir) {
-		switch (dir) {
-		case up: {
-				y -= 1;
-			break; 
-		}
-		case left: {
-				x -= 1;
-			break; 
-		}
-		case down:{ 
-				y += 1;
-			break; 
-		}
-		case right: {
-				x += 1;
-			break; 
-		}
-		}
-	}
+	void move(direction dir);
 };
 class Player : public Entity{
 public:
@@ -128,7 +111,11 @@ public:
 		generate(this);
 	}
 	void hash() {
-		int index = (abs(x) + abs(y)) % primenum;
+		if (abs(x + y) > primenum) {
+			prime();
+			resize();
+		}
+		int index = (abs(x + y)) % primenum;
 		hashmap[index].push(this);
 	}
 	static void generate(Chunk *c) {
@@ -158,11 +145,9 @@ public:
 		}
 	}
 	static int nodetochunk(int i) {
-		//return (i - length + 1) / length;
 		if (i >= 0) {
 			return i / length;
 		}
-		//return (i / length)-1;
 		return (i - length + 1) / length;
 	}
 	static int chunktonode(int c, int r) {//(c)hunk val; (r)elative tile val
@@ -171,20 +156,20 @@ public:
 	static int relativenode(int c, int a) {
 		return (a - c*length);
 	}
-	static int prime(int prev) {	//Prime num calc
-		for (int i = prev; i< INT_MAX; i++)
+	static void prime() {	//Prime num calc
+		for (int i = primenum ; i< INT_MAX; i++)
 			for (int j = 2; j*j <= i; j++)
 			{
 				if (i % j == 0)
 					break;
 				else if (j + 1 > sqrt(i)) {
-					return i;
+					primenum = i;
+					return;
 				}
 			}
 	}
-	static void resize(int size) {//resize hashmap
-		std::stack<Chunk*> *newHashmap = new std::stack<Chunk*>[size];
-		//Copy
+	static void resize() {//resize hashmap
+		std::stack<Chunk*> *newHashmap = new std::stack<Chunk*>[primenum];
 		for (int i = 0; i < primenum; i++) {
 			newHashmap[i] = hashmap[i];
 		}
@@ -193,7 +178,7 @@ public:
 	}
 	static Chunk* get(int chunkx, int chunky) {
 		if (!hashmap[(abs(chunkx) + abs(chunky)) % primenum].empty()) {
-			for (std::stack<Chunk*> dump = hashmap[(abs(chunkx) + abs(chunky)) % primenum]; !dump.empty(); dump.pop()) {
+			for (std::stack<Chunk*> dump = hashmap[(abs(chunkx + chunky)) % primenum]; !dump.empty(); dump.pop()) {
 				if (dump.top()->x == chunkx && dump.top()->y == chunky) {
 					return dump.top();
 				}
@@ -202,15 +187,12 @@ public:
 		return nullptr;
 	}
 	static Tile* getTile(int tilex, int tiley) {
-		int chunkx = nodetochunk(tilex);
-		int chunky = nodetochunk(tiley);
 		Chunk* c = get(nodetochunk(tilex), nodetochunk(tiley));
 		if (c == nullptr) {
-			return nullptr;
+			c = new Chunk(nodetochunk(tilex), nodetochunk(tiley));
 		}
-		else {//VV issue probably here VV
-			return c->tempField[relativenode(c->x, tilex)][relativenode(c->y, tiley)];
-		}
+		return c->tempField[relativenode(c->x, tilex)][relativenode(c->y, tiley)];
+
 	}
 	static void draw() {
 		//First get player position
@@ -278,31 +260,51 @@ void input() {
 		if (_getch() == 224) {
 			switch (_getch()) {
 			case 72: {	//up
-				if (Chunk::getTile(Chunk::p.x, Chunk::p.y - 1)->walkable) {
 					Chunk::p.move(up);
-				}
 				break; 
 			}
 			case 75: {	//left
-				if (Chunk::getTile(Chunk::p.x - 1, Chunk::p.y )->walkable) {
 					Chunk::p.move(left);
-				}
 				break; 
 			}
 			case 80: {	//down
-				if (Chunk::getTile(Chunk::p.x, Chunk::p.y + 1)->walkable) {
 					Chunk::p.move(down);
-				}
 				break;
 			}
 			case 77: {	//right
-				if (Chunk::getTile(Chunk::p.x + 1, Chunk::p.y)->walkable) {
-				Chunk::p.move(right);
-				}				
+				Chunk::p.move(right);	
 				break;
 			}
 			}
 		}
+	}
+}
+void Entity::move(direction dir) {
+	switch (dir) {
+	case up: {
+		if (Chunk::getTile(x, y - 1)->walkable) {
+			y -= 1;
+		}
+		break;
+	}
+	case left: {
+		if (Chunk::getTile(x - 1, y)->walkable) {
+			x -= 1;
+		}
+		break;
+	}
+	case down: {
+		if (Chunk::getTile(x, y + 1)->walkable) {
+			y += 1;
+		}
+		break;
+	}
+	case right: {
+		if (Chunk::getTile(x + 1, y)->walkable) {
+			x += 1;
+		}
+		break;
+	}
 	}
 }
 int main(){
