@@ -18,7 +18,7 @@
 int seed = 420;
 enum direction {up, left, down, right};
 enum wallstypes {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
-enum groundtype {light = 176, med = 177, dark =178};
+enum groundtype { blank = 32, light = 176, med = 177, dark = 178 };
 enum fencetype {svert = 179, shor = 196, scross = 197};
 template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
@@ -31,61 +31,66 @@ inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& m
 class Point {// END MY SUFFERING
 public:
 	int x, y;
-	Point(int xd = NULL, int yd = NULL) {
-		x = xd;
-		y = yd;
-	}
+	Point(int xd = NULL, int yd = NULL) : x{ xd }, y{ yd } {	}
 };
-class Tile{
+class Tile{//ASCII starts at 128-254
 public:
 	char display;
 	int x;
 	int y;
 	bool walkable;
+	float type;
+	Tile(double noise, int xpos = 5, int ypos = 5) : x{ xpos }, y{ ypos } {
+		interpret(noise);
+	}
 	Tile(char c = '#', int xpos = 5, int ypos = 5) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
+	void interpret(double noise) { //Noise is from 0-1
+		type = abs(noise - 0.5); 
+		walkable = true;
+		if (type < .1) { // clean ground
+			display = blank;
+		}
+		else if (type < .15){
+			display = light;
+		}
+		else if (type < .2) {
+			display = med;
+		}
+		else if (type < .25) {
+			display = dark;
+			walkable = false;
+		}
+		else if (type < .3) {
+			display = solid;
+			walkable = false;
+		}
+		else {
+		}
+	}
 };
 class Entity : public Tile{
 public:
-	Entity() {
-
-	}
-	void move(int dir) {
+	Entity() {	}
+	void move(direction dir) {
 		switch (dir) {
-		case up: y -= 1;
-			break;
-		case left: x -= 1;
-			break;
-		case down: y += 1;
-			break;
-		case right: x += 1;
-			break;
+		case up: {
+				y -= 1;
+			break; 
+		}
+		case left: {
+				x -= 1;
+			break; 
+		}
+		case down:{ 
+				y += 1;
+			break; 
+		}
+		case right: {
+				x += 1;
+			break; 
+		}
 		}
 	}
-};
-class Water : public Tile {
-public:
-	Water(int xpos = 5, int ypos = 5) : Tile('~', xpos, ypos){
-		walkable = false;
-	}
-};
-class Wall : public Tile {
-public:
-	Wall(int xpos = 5, int ypos = 5) : Tile('~', xpos, ypos) {
-		walkable = false;
-	}	
-};
-class Structure {
-public:
-	int w, h, x, y;
-	bool doors[4];
-	std::vector<std::vector<Tile*>> tiles;
-	Structure(int xpos = 5, int ypos = 5, int wid = 5, int hei = 5) : x{ xpos }, y{ ypos }, w{ wid }, h{ hei } {
-		for (auto i: doors) {
-			i = true;
-		}
-		//Do stuff here
-	}
-
 };
 class Player : public Entity{
 public:
@@ -127,26 +132,37 @@ public:
 		hashmap[index].push(this);
 	}
 	static void generate(Chunk *c) {
-		double frequency = sqrt((c->x * c->x) + (c->y * c->y));
-		frequency = Clamp(frequency, 0.1, 64.0);
-		int octaves = sqrt((c->x * c->x) + (c->y * c->y));
-		octaves = Clamp(octaves, 1, 16);
+		double frequency = 2*sqrt((c->x * c->x) + (c->y * c->y));
+		//frequency = Clamp(frequency, 0.1, 64.0);
+		frequency = Clamp(frequency, 0.1, 128.0);
+		int octaves = 2*sqrt((c->x * c->x) + (c->y * c->y));
+		//octaves = Clamp(octaves, 1, 16);
+		octaves = Clamp(octaves, 1, 64);
 		const siv::PerlinNoise perlin(seed);
 		const double fx = length / frequency;
 		const double fy = length / frequency;
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
 				double noise = perlin.octaveNoise0_1(j / fx, i / fy, octaves);
-				if (noise < .5) {
+				//std::cout << noise << " ";
+				/*if (noise < .6) {
 					c->tempField[i][j] = new Tile(' ', i + length * c->x, j + length * c->y);
 				}
 				else {
 					c->tempField[i][j] = new Tile(noise * 300, i + length * c->x, j + length * c->y);
-				}
+				}*/
+				c->tempField[i][j] = new Tile(noise, i + length * c->x, j + length * c->y);
+
 			}
+			//std::cout << std::endl;
 		}
 	}
 	static int nodetochunk(int i) {
+		//return (i - length + 1) / length;
+		if (i >= 0) {
+			return i / length;
+		}
+		//return (i / length)-1;
 		return (i - length + 1) / length;
 	}
 	static int chunktonode(int c, int r) {//(c)hunk val; (r)elative tile val
@@ -184,6 +200,17 @@ public:
 			}
 		}
 		return nullptr;
+	}
+	static Tile* getTile(int tilex, int tiley) {
+		int chunkx = nodetochunk(tilex);
+		int chunky = nodetochunk(tiley);
+		Chunk* c = get(nodetochunk(tilex), nodetochunk(tiley));
+		if (c == nullptr) {
+			return nullptr;
+		}
+		else {//VV issue probably here VV
+			return c->tempField[relativenode(c->x, tilex)][relativenode(c->y, tiley)];
+		}
 	}
 	static void draw() {
 		//First get player position
@@ -231,7 +258,6 @@ public:
 		std::string output = "";
 		
 		for (int i = 0; i < ents.size(); i++) {
-			// FUCK HAVE TO DO SAME THING BUT FOR ENT 
 			viewField[ents[i]->x - dist[left]][ents[i]->y - dist[up]] = ents[i];
 		}
 		for (int i = 0; i < (2 * viewdisty) + 1; i++) {
@@ -240,7 +266,7 @@ public:
 			}
 			output += "\n";
 		}
-		std::cout << output;
+		std::cout << output << p.x << " " << p.y << std::endl;
 	} 
 };
 int Chunk::primenum = 137;
@@ -252,20 +278,28 @@ void input() {
 		if (_getch() == 224) {
 			switch (_getch()) {
 			case 72: {	//up
-				Chunk::p.move(up);
+				if (Chunk::getTile(Chunk::p.x, Chunk::p.y - 1)->walkable) {
+					Chunk::p.move(up);
+				}
 				break; 
 			}
 			case 75: {	//left
-				Chunk::p.move(left);
+				if (Chunk::getTile(Chunk::p.x - 1, Chunk::p.y )->walkable) {
+					Chunk::p.move(left);
+				}
 				break; 
 			}
 			case 80: {	//down
-				Chunk::p.move(down);
+				if (Chunk::getTile(Chunk::p.x, Chunk::p.y + 1)->walkable) {
+					Chunk::p.move(down);
+				}
 				break;
 			}
 			case 77: {	//right
+				if (Chunk::getTile(Chunk::p.x + 1, Chunk::p.y)->walkable) {
 				Chunk::p.move(right);
-				break; 
+				}				
+				break;
 			}
 			}
 		}
