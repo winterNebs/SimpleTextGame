@@ -17,9 +17,10 @@
 
 int seed = 420;
 enum direction {up, left, down, right};
-enum wallstypes {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
+enum wallstype {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
 enum groundtype { blank = 32, light = 176, med = 177, dark = 178 };
 enum fencetype {svert = 179, shor = 196, scross = 197};
+enum alttype{hash = 35};
 template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
 	return (x < min) ? min : ((max < x) ? max : x);
@@ -28,6 +29,7 @@ inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& m
 //Distance from 00 can increase intensity of noise
 //I guess each structure/tile can have differrent noise value;
 //Structures
+//Create array of tilesets or something. ikd about biomes or something
 class Point {// END MY SUFFERING
 public:
 	int x, y;
@@ -39,36 +41,44 @@ public:
 	int x;
 	int y;
 	bool walkable;
-	float type;
 	Tile(double noise, int xpos = 5, int ypos = 5) : x{ xpos }, y{ ypos } {
 		interpret(noise);
 	}
 	Tile(char c = '#', int xpos = 5, int ypos = 5) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
 	void interpret(double noise) { //Noise is from 0-1
-		type = abs(noise - 0.5); 
 		walkable = true;
-		if (type < .01) { // clean ground
+		if (noise < .1) { // clean ground
 			display = blank;
 		}
-		else if (type < .05){
+		else if (noise < .2) {
 			display = light;
 		}
-		else if (type < .1) {
+		else if (noise < .3) {
 			display = med;
 		}
-		else if (type < .25) {
+		else if (noise < .4) {
 			display = dark;
 		}
-		else if (type < .3) {
+		else if (noise < .5) {
 			display = solid;
 		}
-		else if (type < .35){
+		else if (noise < .6) {
 			display = 126;
 		}
-		else if (type < .4) {
+		else if (noise < .7) {
 			display = 35;
 		}
+		//display = (int)(noise * 10)+48;
 	}
+};
+struct Biome{
+	int r;
+	Biome(int r) {};
+};
+struct TileSet {
+	float max;
+	int tile;
+	TileSet(float ma = 1, int t = 35) : max{ ma }, tile{ t } {	}
 };
 class Entity : public Tile{
 public:
@@ -85,13 +95,13 @@ public:
 	}
 };
 class Chunk { 
-public:
-	static const int viewdisty = 8;//number of squares away from player not including player  (17x17 for 8)
-	static const int viewdistx = 16;
+	static const int viewdisty = 13;//number of squares away from player not including player  (17x17 for 8)
+	static const int viewdistx = 50;
 	static int primenum;
 	static std::stack<Chunk*>* hashmap;
 	static const int length = 16;
 	static std::vector<Entity*> ents;
+public:
 	int tbounds[4];
 	int x, y;
 	static Player p;
@@ -118,30 +128,23 @@ public:
 		int index = (abs(x + y)) % primenum;
 		hashmap[index].push(this);
 	}
-	static void generate(Chunk *c) {
-		double frequency = 2*sqrt((c->x * c->x) + (c->y * c->y));
-		//frequency = Clamp(frequency, 0.1, 64.0);
-		frequency = Clamp(frequency, 0.1, 128.0);
-		int octaves = 2*sqrt((c->x * c->x) + (c->y * c->y));
-		//octaves = Clamp(octaves, 1, 16);
-		octaves = Clamp(octaves, 1, 64);
+	static void generate(Chunk *c) {//Freq = number, octave = variation
+		//double frequency = sqrt((c->x * c->x) + (c->y * c->y))/2;
+		double frequency = 1;
+		frequency = Clamp(frequency, 0.1, 4.0);
+		//int octaves = sqrt((c->x * c->x) + (c->y * c->y))/2;
+		int octaves = 1;
+		octaves = Clamp(octaves, 1, 16);
 		const siv::PerlinNoise perlin(seed);
 		const double fx = length / frequency;
 		const double fy = length / frequency;
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
-				double noise = perlin.octaveNoise0_1(j / fx, i / fy, octaves);
-				//std::cout << noise << " ";
-				/*if (noise < .6) {
-					c->tempField[i][j] = new Tile(' ', i + length * c->x, j + length * c->y);
-				}
-				else {
-					c->tempField[i][j] = new Tile(noise * 300, i + length * c->x, j + length * c->y);
-				}*/
-				c->tempField[i][j] = new Tile(noise, i + length * c->x, j + length * c->y);
-
+				int actualx = i + length * c->x;
+				int acutaly = j + length * c->y;
+				double noise = perlin.octaveNoise0_1(actualx / fx, acutaly / fy, octaves);
+				c->tempField[i][j] = new Tile(noise, actualx, acutaly);
 			}
-			//std::cout << std::endl;
 		}
 	}
 	static int nodetochunk(int i) {
@@ -208,13 +211,12 @@ public:
 			Point(dist[right],dist[down]),						//Bottom right
 			Point(dist[right],dist[up])							//Top right
 		};
-		int loaddir[]{//PROBLEM
+		int loaddir[]{
 			-ceil((float)(abs(relativenode(nodetochunk(p.y), p.y) - viewdisty)) / length),	//up 
 			-ceil((float)(abs(relativenode(nodetochunk(p.x), p.x) - viewdistx)) / length),	//left
 			ceil((float)(relativenode(nodetochunk(p.y), p.y) + viewdisty) / length),			//down
 			ceil((float)(relativenode(nodetochunk(p.x), p.x) + viewdistx) / length)			//right
 		};//Coordinates are (left + up, left + down, right + down, right + up)
-	
 		  //Calculate view distance and required chunks
 		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
 			for (int j = loaddir[up]; j <= loaddir[down]; j++) {
@@ -236,9 +238,7 @@ public:
 				}
 			}
 		}
-		system("CLS");
 		std::string output = "";
-		
 		for (int i = 0; i < ents.size(); i++) {
 			viewField[ents[i]->x - dist[left]][ents[i]->y - dist[up]] = ents[i];
 		}
@@ -248,7 +248,8 @@ public:
 			}
 			output += "\n";
 		}
-		std::cout << output << p.x << " " << p.y << std::endl;
+		system("CLS");
+		std::cout << output << "coords: (" << p.x << ", " << p.y << ")" << std::endl;
 	} 
 };
 int Chunk::primenum = 137;
@@ -306,6 +307,7 @@ void Entity::move(direction dir) {
 		break;
 	}
 	}
+	//Chunk::draw();
 }
 int main(){
 
@@ -315,7 +317,7 @@ int main(){
 	while (1) {
 		input();
 		Chunk::draw();
-		Sleep(1);
+		Sleep(100);
 	}
     return 0;
 }
