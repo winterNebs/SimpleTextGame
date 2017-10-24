@@ -20,7 +20,7 @@ enum direction {up, left, down, right};
 enum wallstype {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
 enum groundtype { blank = 32, light = 176, med = 177, dark = 178 };
 enum fencetype {svert = 179, shor = 196, scross = 197};
-enum alttype{hash = 35};
+enum alttype{hash = 35, water = 126, doublewater = 247, tree = 140};
 template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
 	return (x < min) ? min : ((max < x) ? max : x);
@@ -45,8 +45,32 @@ public:
 		interpret(noise);
 	}
 	Tile(char c = '#', int xpos = 5, int ypos = 5) : walkable{ true }, display{ c }, x{ xpos }, y{ ypos } {	}
-	void interpret(double noise) { //Noise is from 0-1
-		walkable = true;
+	void interpret(double noise);
+};
+struct TileSet {
+	double max;
+	int tile;
+	bool walkable;
+	int range;
+	TileSet(double ma = 1, int t = 35, bool w = true, int r = NULL) :range{ r }, max { ma }, tile{ t }, walkable{ w } {	}
+}; 
+const std::vector<TileSet> plains = { TileSet(0.30,blank,true,1000),TileSet(0.60,light),TileSet(0.70,med),TileSet(0.80,dark,false) };
+const std::vector<TileSet> swamp = { TileSet(.3,doublewater,false,400),TileSet(.5,water),TileSet(.6,light),TileSet(.8,tree,false),TileSet(.8,tree,false) };
+const std::vector<std::vector<TileSet>> tilesets = { plains, swamp };
+void Tile::interpret(double noise) {///what hte fuck
+	for (int i = 0; i < tilesets.size(); i++) {
+		int rad = sqrt((x*x) + (y*y));
+		if ( rad < tilesets[i][0].range) {
+			for (int j = 0; j < tilesets[i].size(); j++) {
+				if (noise < tilesets[i][j].max) {
+					display = tilesets[i][j].tile;
+					walkable = tilesets[i][j].walkable;
+				}
+			}
+			return;
+		}
+	}
+		/*
 		if (noise < .1) { // clean ground
 			display = blank;
 		}
@@ -67,19 +91,10 @@ public:
 		}
 		else if (noise < .7) {
 			display = 35;
-		}
-		//display = (int)(noise * 10)+48;
-	}
-};
-struct Biome{
-	int r;
-	Biome(int r) {};
-};
-struct TileSet {
-	float max;
-	int tile;
-	TileSet(float ma = 1, int t = 35) : max{ ma }, tile{ t } {	}
-};
+		}*/
+		///display = (int)(noise * 10)+48;
+
+}
 class Entity : public Tile{
 public:
 	Entity() {	}
@@ -317,7 +332,7 @@ int main(){
 	while (1) {
 		input();
 		Chunk::draw();
-		Sleep(100);
+		Sleep(10);
 	}
     return 0;
 }
