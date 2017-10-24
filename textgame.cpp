@@ -52,24 +52,25 @@ struct TileSet {
 	int tile;
 	bool walkable;
 	int range;
-	TileSet(double ma = 1, int t = 35, bool w = true, int r = NULL) :range{ r }, max { ma }, tile{ t }, walkable{ w } {	}
+	TileSet(double ma = 1, int t = 35, bool w = true, int r = 0) :range{ r }, max { ma }, tile{ t }, walkable{ w } {	}
 }; 
-const std::vector<TileSet> plains = { TileSet(0.30,blank,true,1000),TileSet(0.60,light),TileSet(0.70,med),TileSet(0.80,dark,false) };
-const std::vector<TileSet> swamp = { TileSet(.3,doublewater,false,400),TileSet(.5,water),TileSet(.6,light),TileSet(.8,tree,false),TileSet(.8,tree,false) };
-const std::vector<std::vector<TileSet>> tilesets = { plains, swamp };
+const std::vector<TileSet*> plains = { new TileSet(0.30,blank,true,1000), new TileSet(0.60,light),new TileSet(0.70,med),new TileSet(0.80,dark,false),new TileSet(1,water,false) };
+const std::vector<TileSet*> swamp = { new TileSet(.3,doublewater,false,400), new TileSet(.5,water),new TileSet(.6,light),new TileSet(.8,tree,false), new TileSet(.8,tree,false) };
+const std::vector<std::vector<TileSet*>> tilesets = {plains, swamp };///
 void Tile::interpret(double noise) {///what hte fuck
+	int rad = sqrt((x*x) + (y*y));
 	for (int i = 0; i < tilesets.size(); i++) {
-		int rad = sqrt((x*x) + (y*y));
-		if ( rad < tilesets[i][0].range) {
-			for (int j = 0; j < tilesets[i].size(); j++) {
-				if (noise < tilesets[i][j].max) {
-					display = tilesets[i][j].tile;
-					walkable = tilesets[i][j].walkable;
+		if ( rad < tilesets[i][0]->range) { // eAA
+			for (int j = tilesets[i].size(); j < 0; j--) {
+				if (noise < tilesets[i][j]->max) {
+					display = (int)tilesets[i][j]->tile;
+					walkable = tilesets[i][j]->walkable;
+					return;
 				}
 			}
 			return;
 		}
-	}
+	}/**/
 		/*
 		if (noise < .1) { // clean ground
 			display = blank;
@@ -332,7 +333,7 @@ int main(){
 	while (1) {
 		input();
 		Chunk::draw();
-		Sleep(10);
+		Sleep(100);
 	}
     return 0;
 }
