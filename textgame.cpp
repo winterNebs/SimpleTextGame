@@ -16,11 +16,13 @@
 //Garbage collection when.
 
 int seed = 420;
+bool alive = true;
 enum direction {up, left, down, right};
 enum wallstype {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
-enum groundtype { blank = 32, light = 176, med = 177, dark = 178 };
+enum groundtype { black = 32, dark = 176, med = 177, light = 178, white = 219};
 enum fencetype {svert = 179, shor = 196, scross = 197};
-enum alttype{hash = 35, water = 126, doublewater = 247, tree = 140};
+enum alttype{hash = 35, water = 126, doublewater = 205, tree = 140};
+enum harmless { circle = 111 };
 template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
 	return (x < min) ? min : ((max < x) ? max : x);
@@ -35,7 +37,7 @@ public:
 	int x, y;
 	Point(int xd = NULL, int yd = NULL) : x{ xd }, y{ yd } {	}
 };
-class Tile{//ASCII starts at 128-254
+class Tile{///https://i.imgur.com/ZFt3cna.png
 public:
 	char display;
 	int x;
@@ -54,52 +56,41 @@ struct TileSet {
 	int range;
 	TileSet(double ma = 1, int t = 35, bool w = true, int r = 0) :range{ r }, max { ma }, tile{ t }, walkable{ w } {	}
 }; 
-const std::vector<TileSet*> plains = { new TileSet(0.30,blank,true,1000), new TileSet(0.60,light),new TileSet(0.70,med),new TileSet(0.80,dark,false),new TileSet(1,water,false) };
-const std::vector<TileSet*> swamp = { new TileSet(.3,doublewater,false,400), new TileSet(.5,water),new TileSet(.6,light),new TileSet(.8,tree,false), new TileSet(.8,tree,false) };
+const std::vector<TileSet*> plains = { new TileSet(.6,med,true,400), new TileSet(.7,light,false) , new TileSet(2, white,false) };
+const std::vector<TileSet*> swamp = { new TileSet(.2, black,false,800), new TileSet(.3,water),new TileSet(.4,med), new  TileSet(.6,dark), new TileSet(2, tree, false) };
 const std::vector<std::vector<TileSet*>> tilesets = {plains, swamp };///
 void Tile::interpret(double noise) {///what hte fuck
 	int rad = sqrt((x*x) + (y*y));
 	for (int i = 0; i < tilesets.size(); i++) {
 		if ( rad < tilesets[i][0]->range) { // eAA
-			for (int j = tilesets[i].size(); j < 0; j--) {
+			for (int j = tilesets[i].size()-1; j >= 0; j--) {
 				if (noise < tilesets[i][j]->max) {
 					display = (int)tilesets[i][j]->tile;
 					walkable = tilesets[i][j]->walkable;
-					return;
 				}
 			}
 			return;
 		}
-	}/**/
-		/*
-		if (noise < .1) { // clean ground
-			display = blank;
-		}
-		else if (noise < .2) {
-			display = light;
-		}
-		else if (noise < .3) {
-			display = med;
-		}
-		else if (noise < .4) {
-			display = dark;
-		}
-		else if (noise < .5) {
-			display = solid;
-		}
-		else if (noise < .6) {
-			display = 126;
-		}
-		else if (noise < .7) {
-			display = 35;
-		}*/
-		///display = (int)(noise * 10)+48;
-
+	}
 }
 class Entity : public Tile{
 public:
 	Entity() {	}
 	void move(direction dir);
+};
+class Enemy : public Entity {//snake <<<<<
+	bool killer;
+	Enemy(bool killer = false) : killer{ killer } {
+		walkable = false;
+		if (killer) {
+
+		}
+		else {
+			display = circle;
+		}
+	}
+	void move();
+	
 };
 class Player : public Entity{
 public:
@@ -325,16 +316,48 @@ void Entity::move(direction dir) {
 	}
 	//Chunk::draw();
 }
+void Enemy::move() {
+	int dir = rand() % 3;
+	switch (dir) {
+	case up: {
+		if (Chunk::getTile(x, y - 1)->walkable) {
+			y -= 1;
+		}
+		break;
+	}
+	case left: {
+		if (Chunk::getTile(x - 1, y)->walkable) {
+			x -= 1;
+		}
+		break;
+	}
+	case down: {
+		if (Chunk::getTile(x, y + 1)->walkable) {
+			y += 1;
+		}
+		break;
+	}
+	case right: {
+		if (Chunk::getTile(x + 1, y)->walkable) {
+			x += 1;
+		}
+		break;
+	}
+	}
+	//Chunk::draw();
+}
 int main(){
 
 	Chunk first;
 	srand(time(NULL));	
 
-	while (1) {
+	while (alive) {
 		input();
 		Chunk::draw();
-		Sleep(100);
+		Sleep(1);
 	}
+	std::cout << "You died.";
+	while (1) {	}
     return 0;
 }
 
