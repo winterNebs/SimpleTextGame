@@ -23,6 +23,7 @@ enum groundtype { black = 32, dark = 176, med = 177, light = 178, white = 219};
 enum fencetype {svert = 179, shor = 196, scross = 197};
 enum alttype{hash = 35, water = 126, doublewater = 205, tree = 140};
 enum harmless { circle = 111 };
+enum angry {angrycircle = 147};
 template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
 	return (x < min) ? min : ((max < x) ? max : x);
@@ -75,22 +76,20 @@ void Tile::interpret(double noise) {///what hte fuck
 }
 class Entity : public Tile{
 public:
+	bool hostile;
 	Entity() {	}
 	void move(direction dir);
+	void move();
 };
 class Enemy : public Entity {//snake <<<<<
-	bool killer;
-	Enemy(bool killer = false) : killer{ killer } {
+public:
+	Enemy(int xpos, int ypos){
 		walkable = false;
-		if (killer) {
-
-		}
-		else {
-			display = circle;
-		}
+		x = xpos;
+		y = ypos;
+		hostile = true;
+		display = angrycircle;
 	}
-	void move();
-	
 };
 class Player : public Entity{
 public:
@@ -99,6 +98,7 @@ public:
 		y = ypos;
 		display = 135;
 		walkable = false;
+		hostile = false;
 	}
 };
 class Chunk { 
@@ -145,12 +145,17 @@ public:
 		const siv::PerlinNoise perlin(seed);
 		const double fx = length / frequency;
 		const double fy = length / frequency;
+		bool hasenemy = false;
 		for (int i = 0; i < length; i++) {
 			for (int j = 0; j < length; j++) {
 				int actualx = i + length * c->x;
-				int acutaly = j + length * c->y;
-				double noise = perlin.octaveNoise0_1(actualx / fx, acutaly / fy, octaves);
-				c->tempField[i][j] = new Tile(noise, actualx, acutaly);
+				int actualy = j + length * c->y;
+				double noise = perlin.octaveNoise0_1(actualx / fx, actualy / fy, octaves);
+				c->tempField[i][j] = new Tile(noise, actualx, actualy);
+				if (noise > .3 && noise < .5 && rand() % 1000 == 1 && !hasenemy) {
+					ents.push_back(new Enemy(actualx, actualy));
+					hasenemy = true;
+				}
 			}
 		}
 	}
@@ -168,8 +173,7 @@ public:
 	}
 	static void prime() {	//Prime num calc
 		for (int i = primenum ; i< INT_MAX; i++)
-			for (int j = 2; j*j <= i; j++)
-			{
+			for (int j = 2; j*j <= i; j++){
 				if (i % j == 0)
 					break;
 				else if (j + 1 > sqrt(i)) {
@@ -247,7 +251,23 @@ public:
 		}
 		std::string output = "";
 		for (int i = 0; i < ents.size(); i++) {
-			viewField[ents[i]->x - dist[left]][ents[i]->y - dist[up]] = ents[i];
+			if (ents[i]->hostile) {
+				std::cout << "Enemy " << i << " coords: (" << ents[i]->x << ", " << ents[i]->y << ")" << std::endl;
+				for (int j = 0; j < ents.size(); j++) {
+					if (!ents[j]->hostile) {
+						if (ents[i]->x == ents[j]->x && ents[i]->x == ents[j]->y) {
+							alive = false;
+						}
+					}
+				}
+				ents[i]->move();
+			}			
+			if (ents[i]->x > dist[left] && 
+				ents[i]->x < dist[right] && 
+				ents[i]->y > dist[up] && 
+				ents[i]->y < dist[down]) {
+				viewField[ents[i]->x - dist[left]][ents[i]->y - dist[up]] = ents[i];
+			}
 		}
 		for (int i = 0; i < (2 * viewdisty) + 1; i++) {
 			for (int j = 0; j < (2 * viewdistx) + 1; j++) {
@@ -316,41 +336,41 @@ void Entity::move(direction dir) {
 	}
 	//Chunk::draw();
 }
-void Enemy::move() {
+void Entity::move() {
 	int dir = rand() % 3;
-	switch (dir) {
-	case up: {
-		if (Chunk::getTile(x, y - 1)->walkable) {
-			y -= 1;
+	if(rand()%10 == 1){
+		switch (dir) {
+		case up: {
+			if (Chunk::getTile(x, y - 1)->walkable) {
+				y -= 1;
+			}
+			break;
 		}
-		break;
-	}
-	case left: {
-		if (Chunk::getTile(x - 1, y)->walkable) {
-			x -= 1;
+		case left: {
+			if (Chunk::getTile(x - 1, y)->walkable) {
+				x -= 1;
+			}
+			break;
 		}
-		break;
-	}
-	case down: {
-		if (Chunk::getTile(x, y + 1)->walkable) {
-			y += 1;
+		case down: {
+			if (Chunk::getTile(x, y + 1)->walkable) {
+				y += 1;
+			}
+			break;
 		}
-		break;
-	}
-	case right: {
-		if (Chunk::getTile(x + 1, y)->walkable) {
-			x += 1;
+		case right: {
+			if (Chunk::getTile(x + 1, y)->walkable) {
+				x += 1;
+			}
+			break;
 		}
-		break;
-	}
+		}
 	}
 	//Chunk::draw();
 }
 int main(){
-
 	Chunk first;
-	srand(time(NULL));	
-
+	srand(time(NULL));
 	while (alive) {
 		input();
 		Chunk::draw();
