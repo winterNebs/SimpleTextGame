@@ -80,6 +80,12 @@ public:
 	Entity() {	}
 	void move(direction dir);
 	void move();
+	bool killcheck(Entity* e){
+		if (x == e->x && y == e->y) {
+			return true;
+		}
+		return false;
+	}
 };
 class Enemy : public Entity {//snake <<<<<
 public:
@@ -252,11 +258,11 @@ public:
 		std::string output = "";
 		for (int i = 0; i < ents.size(); i++) {
 			if (ents[i]->hostile) {
-				std::cout << "Enemy " << i << " coords: (" << ents[i]->x << ", " << ents[i]->y << ")" << std::endl;
+				//std::cout << "Enemy " << i << " coords: (" << ents[i]->x << ", " << ents[i]->y << ")" << std::endl;
 				for (int j = 0; j < ents.size(); j++) {
 					if (!ents[j]->hostile) {
-						if (ents[i]->x == ents[j]->x && ents[i]->x == ents[j]->y) {
-							alive = false;
+						if (ents[i]->x == ents[j]->x && ents[i]->y == ents[j]->y) {
+							alive = false;//do smart thibng with h kill hceck here okeikeorojje9qoi 00iij
 						}
 					}
 				}
@@ -278,6 +284,9 @@ public:
 		system("CLS");
 		std::cout << output << "coords: (" << p.x << ", " << p.y << ")" << std::endl;
 	} 
+};
+class Weapon : Entity{
+
 };
 int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
