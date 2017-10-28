@@ -78,8 +78,8 @@ class Entity : public Tile{
 public:
 	bool hostile;
 	Entity() {	}
-	void move(direction dir);
-	void move();
+	virtual void move(int dir);
+	virtual void die();
 	bool killcheck(Entity* e){
 		if (x == e->x && y == e->y) {
 			return true;
@@ -96,6 +96,7 @@ public:
 		hostile = true;
 		display = angrycircle;
 	}
+	void move(int dir);	
 };
 class Player : public Entity{
 public:
@@ -106,6 +107,7 @@ public:
 		walkable = false;
 		hostile = false;
 	}
+	void die();
 };
 class Chunk { 
 	static const int viewdisty = 13;//number of squares away from player not including player  (17x17 for 8)
@@ -117,11 +119,10 @@ class Chunk {
 public:
 	int tbounds[4];
 	int x, y;
-	static Player p;
+	static Player *p;
 	Tile* tempField[length][length];
-	Chunk() : Chunk(0, 0){
-		p = Player(0,0);
-		ents.push_back(&p);
+	Chunk() : Chunk(0, 0) {
+		ents.push_back(p);
 	} 
 	Chunk(int xpos, int ypos) {
 		x = xpos;
@@ -158,8 +159,9 @@ public:
 				int actualy = j + length * c->y;
 				double noise = perlin.octaveNoise0_1(actualx / fx, actualy / fy, octaves);
 				c->tempField[i][j] = new Tile(noise, actualx, actualy);
-				if (noise > .3 && noise < .5 && rand() % 1000 == 1 && !hasenemy) {
+				if (noise > .3 && noise < .5 && rand() % 1000 == 1 && hasenemy == false) {
 					ents.push_back(new Enemy(actualx, actualy));
+					//std::cout << "(" << actualx << ", " << actualy << ")" << std::endl;
 					hasenemy = true;
 				}
 			}
@@ -197,20 +199,18 @@ public:
 		hashmap = newHashmap;
 	}
 	static Chunk* get(int chunkx, int chunky) {
-		if (!hashmap[(abs(chunkx) + abs(chunky)) % primenum].empty()) {
+		if (!hashmap[(abs(chunkx + chunky)) % primenum].empty()) {
 			for (std::stack<Chunk*> dump = hashmap[(abs(chunkx + chunky)) % primenum]; !dump.empty(); dump.pop()) {
 				if (dump.top()->x == chunkx && dump.top()->y == chunky) {
 					return dump.top();
 				}
 			}
 		}
-		return nullptr;
+		//std::cout << chunkx << ", " << chunky;
+		return new Chunk(chunkx, chunky);
 	}
 	static Tile* getTile(int tilex, int tiley) {
 		Chunk* c = get(nodetochunk(tilex), nodetochunk(tiley));
-		if (c == nullptr) {
-			c = new Chunk(nodetochunk(tilex), nodetochunk(tiley));
-		}
 		return c->tempField[relativenode(c->x, tilex)][relativenode(c->y, tiley)];
 
 	}
@@ -218,10 +218,10 @@ public:
 		//First get player position
 		//Calculate radius for terrain genertation (Chunks only)
 		Tile *viewField[2*viewdistx+1][2*viewdisty+1];
-		int dist[]{ p.y - viewdisty,
-			p.x - viewdistx,
-			p.y + viewdisty,
-			p.x + viewdistx
+		int dist[]{ p->y - viewdisty,
+			p->x - viewdistx,
+			p->y + viewdisty,
+			p->x + viewdistx
 		};
 		Point cornerCoords[]{ Point(dist[left], dist[up]),		//Top left
 			Point(dist[left],dist[down]),						//Bottom left
@@ -229,18 +229,15 @@ public:
 			Point(dist[right],dist[up])							//Top right
 		};
 		int loaddir[]{
-			-ceil((float)(abs(relativenode(nodetochunk(p.y), p.y) - viewdisty)) / length),	//up 
-			-ceil((float)(abs(relativenode(nodetochunk(p.x), p.x) - viewdistx)) / length),	//left
-			ceil((float)(relativenode(nodetochunk(p.y), p.y) + viewdisty) / length),			//down
-			ceil((float)(relativenode(nodetochunk(p.x), p.x) + viewdistx) / length)			//right
+			-ceil((float)(abs(relativenode(nodetochunk(p->y), p->y) - viewdisty)) / length),	//up 
+			-ceil((float)(abs(relativenode(nodetochunk(p->x), p->x) - viewdistx)) / length),	//left
+			ceil((float)(relativenode(nodetochunk(p->y), p->y) + viewdisty) / length),			//down
+			ceil((float)(relativenode(nodetochunk(p->x), p->x) + viewdistx) / length)			//right
 		};//Coordinates are (left + up, left + down, right + down, right + up)
 		  //Calculate view distance and required chunks
 		for (int i = loaddir[left]; i <= loaddir[right]; i++) {
 			for (int j = loaddir[up]; j <= loaddir[down]; j++) {
-				Chunk* c = get(nodetochunk(p.x) + i, nodetochunk(p.y) + j);
-				if (c == nullptr) {
-					c = new Chunk((nodetochunk(p.x) + i), (nodetochunk(p.y) + j));
-				}
+				Chunk* c = get(nodetochunk(p->x) + i, nodetochunk(p->y) + j);
 				//Grab parts of the array and add to big boy array
 				for (int a = 0; a < length; a++) {
 					for (int b = 0; b <length; b++) {
@@ -256,17 +253,29 @@ public:
 			}
 		}
 		std::string output = "";
+		start:
 		for (int i = 0; i < ents.size(); i++) {
 			if (ents[i]->hostile) {
 				//std::cout << "Enemy " << i << " coords: (" << ents[i]->x << ", " << ents[i]->y << ")" << std::endl;
 				for (int j = 0; j < ents.size(); j++) {
-					if (!ents[j]->hostile) {
-						if (ents[i]->x == ents[j]->x && ents[i]->y == ents[j]->y) {
-							alive = false;//do smart thibng with h kill hceck here okeikeorojje9qoi 00iij
+					if (i!=j && ents[i]->killcheck(ents[j])) {
+						if (ents[i] == nullptr || ents[j] == nullptr) {
+							std::cout << "AA";
 						}
+						ents[i]->die();
+						ents[j]->die();
+						Entity* ptr1 = ents[i];
+						Entity* ptr2 = ents[j]; 
+						ents.erase(std::remove(ents.begin(), ents.end(), ents[i]), ents.end());
+						ents.erase(std::remove(ents.begin(), ents.end(), ents[j]), ents.end());
+						delete ptr1;
+						delete ptr2;		
+						goto start;
 					}
 				}
-				ents[i]->move();
+				if (rand() % 10 == 1) {
+					ents[i]->move(5);
+				}
 			}			
 			if (ents[i]->x > dist[left] && 
 				ents[i]->x < dist[right] && 
@@ -282,41 +291,69 @@ public:
 			output += "\n";
 		}
 		system("CLS");
-		std::cout << output << "coords: (" << p.x << ", " << p.y << ")" << std::endl;
+		std::cout << output << "coords: (" << p->x << ", " << p->y << ")" << std::endl;
 	} 
 };
-class Weapon : Entity{
-
+class Bullet : public Entity{
+public:
+	static std::vector<Bullet*> bullets;
+	Bullet(int xpos, int ypos, direction dir) {
+		x = xpos;
+		y = ypos;
+		bullets.push_back(this);
+	}
 };
 int Chunk::primenum = 137;
+std::vector<Bullet*> Bullet::bullets = std::vector<Bullet*>();
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
-Player Chunk::p = Player();
+Player* Chunk::p = new Player(0,0);
 std::vector<Entity*> Chunk::ents = std::vector<Entity*>();
 void input() {
 	if (_kbhit()) {
-		if (_getch() == 224) {
+		int key = _getch();
+		std::cout << key << std::endl;
+		if (key == 224) {
 			switch (_getch()) {
 			case 72: {	//up
-					Chunk::p.move(up);
 				break; 
 			}
 			case 75: {	//left
-					Chunk::p.move(left);
 				break; 
 			}
 			case 80: {	//down
-					Chunk::p.move(down);
 				break;
 			}
 			case 77: {	//right
-				Chunk::p.move(right);	
+				break;
+			}
+			}
+		}
+		else {
+			switch (key) {
+			case 119: { //w
+				Chunk::p->move(up);
+				break;
+			}
+			case 97: { //a
+				Chunk::p->move(left);
+				break;
+			}
+			case 115: { //s
+				Chunk::p->move(down);
+				break;
+			}
+			case 100: { //d
+				Chunk::p->move(right);
+				break;
+			}
+			case 32: { //space
 				break;
 			}
 			}
 		}
 	}
 }
-void Entity::move(direction dir) {
+void Entity::move(int dir) {
 	switch (dir) {
 	case up: {
 		if (Chunk::getTile(x, y - 1)->walkable) {
@@ -343,12 +380,9 @@ void Entity::move(direction dir) {
 		break;
 	}
 	}
-	//Chunk::draw();
 }
-void Entity::move() {
-	int dir = rand() % 3;
-	if(rand()%10 == 1){
-		switch (dir) {
+void Enemy::move(int dir) {
+		switch (rand() % 3) {
 		case up: {
 			if (Chunk::getTile(x, y - 1)->walkable) {
 				y -= 1;
@@ -373,9 +407,12 @@ void Entity::move() {
 			}
 			break;
 		}
-		}
 	}
-	//Chunk::draw();
+}
+void Entity::die() {
+}
+void Player::die() {
+	alive = false;
 }
 int main(){
 	Chunk first;
