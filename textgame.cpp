@@ -1,5 +1,4 @@
 // textgame.cpp : Defines the entry point for the console application.
-//have some pride.
 #include "stdafx.h"
 #include "vector"
 #include "iostream"
@@ -13,8 +12,6 @@
 #include <string>
 #include "PerlinNoise.hpp"
 #include <iomanip>
-//Garbage collection when.
-
 int seed = 420;
 bool alive = true;
 enum direction {up, left, down, right};
@@ -28,11 +25,7 @@ template <class Type>
 inline constexpr const Type& Clamp(const Type& x, const Type& min, const Type& max){
 	return (x < min) ? min : ((max < x) ? max : x);
 }
-//Todo Noise:
-//Distance from 00 can increase intensity of noise
-//I guess each structure/tile can have differrent noise value;
-//Structures
-//Create array of tilesets or something. ikd about biomes or something
+
 class Point {// END MY SUFFERING
 public:
 	int x, y;
@@ -78,7 +71,7 @@ class Entity : public Tile{
 public:
 	bool hostile;
 	Entity() {	}
-	virtual void move(int dir);
+	virtual bool move(int dir);
 	virtual void die();
 	bool killcheck(Entity* e){
 		if (x == e->x && y == e->y) {
@@ -90,13 +83,13 @@ public:
 class Enemy : public Entity {//snake <<<<<
 public:
 	Enemy(int xpos, int ypos){
-		walkable = false;
+		walkable = true;
 		x = xpos;
 		y = ypos;
 		hostile = true;
 		display = angrycircle;
 	}
-	void move(int dir);	
+	bool move(int dir);	
 };
 class Player : public Entity{
 public:
@@ -108,6 +101,18 @@ public:
 		hostile = false;
 	}
 	void die();
+};
+class Bullet : public Entity {
+public:
+	int direction;
+	Bullet(int xpos, int ypos, int dir) {
+		x = xpos;
+		y = ypos;
+		direction = dir;
+		hostile = true;
+	}
+	bool move(int dir);
+	void die() {};
 };
 class Chunk { 
 	static const int viewdisty = 13;//number of squares away from player not including player  (17x17 for 8)
@@ -259,27 +264,33 @@ public:
 				//std::cout << "Enemy " << i << " coords: (" << ents[i]->x << ", " << ents[i]->y << ")" << std::endl;
 				for (int j = 0; j < ents.size(); j++) {
 					if (i!=j && ents[i]->killcheck(ents[j])) {
-						if (ents[i] == nullptr || ents[j] == nullptr) {
-							std::cout << "AA";
-						}
 						ents[i]->die();
 						ents[j]->die();
 						Entity* ptr1 = ents[i];
 						Entity* ptr2 = ents[j]; 
-						ents.erase(std::remove(ents.begin(), ents.end(), ents[i]), ents.end());
-						ents.erase(std::remove(ents.begin(), ents.end(), ents[j]), ents.end());
+						ents.erase(std::remove(ents.begin(), ents.end(), ptr1), ents.end());
+						ents.shrink_to_fit();
+						ents.erase(std::remove(ents.begin(), ents.end(), ptr2), ents.end());/// y u like dis
+						ents.shrink_to_fit();
 						delete ptr1;
 						delete ptr2;		
 						goto start;
 					}
 				}
-				if (rand() % 10 == 1) {
-					ents[i]->move(5);
+				if (!ents[i]->move(5)) {
+					ents[i]->die();
+					Entity* ptr1 = ents[i];
+					ents.erase(std::remove(ents.begin(), ents.end(), ptr1), ents.end());
+					ents.shrink_to_fit();
+					delete ptr1;
+					goto start;
 				}
 			}			
-			if (ents[i]->x > dist[left] && 
-				ents[i]->x < dist[right] && 
-				ents[i]->y > dist[up] && 
+		}
+		for(int i = 0; i < ents.size(); i++) {
+			if (ents[i]->x > dist[left] &&
+				ents[i]->x < dist[right] &&
+				ents[i]->y > dist[up] &&
 				ents[i]->y < dist[down]) {
 				viewField[ents[i]->x - dist[left]][ents[i]->y - dist[up]] = ents[i];
 			}
@@ -293,18 +304,28 @@ public:
 		system("CLS");
 		std::cout << output << "coords: (" << p->x << ", " << p->y << ")" << std::endl;
 	} 
-};
-class Bullet : public Entity{
-public:
-	static std::vector<Bullet*> bullets;
-	Bullet(int xpos, int ypos, direction dir) {
-		x = xpos;
-		y = ypos;
-		bullets.push_back(this);
+	static void shoot(direction dir) {
+		switch (dir) {
+		case up: {
+			ents.push_back(new Bullet(p->x, p->y - 1, up));
+			break;
+		}
+		case left: {
+			ents.push_back(new Bullet(p->x - 1, p->y, left));
+			break;
+		}
+		case down: {
+			ents.push_back(new Bullet(p->x, p->y + 1, down));
+			break;
+		}
+		case right: {
+			ents.push_back(new Bullet(p->x + 1, p->y, right));
+			break;
+		}
+		}
 	}
 };
 int Chunk::primenum = 137;
-std::vector<Bullet*> Bullet::bullets = std::vector<Bullet*>();
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
 Player* Chunk::p = new Player(0,0);
 std::vector<Entity*> Chunk::ents = std::vector<Entity*>();
@@ -315,15 +336,19 @@ void input() {
 		if (key == 224) {
 			switch (_getch()) {
 			case 72: {	//up
+				Chunk::shoot(up);
 				break; 
 			}
 			case 75: {	//left
+				Chunk::shoot(left);
 				break; 
 			}
 			case 80: {	//down
+				Chunk::shoot(down);
 				break;
 			}
 			case 77: {	//right
+				Chunk::shoot(right);
 				break;
 			}
 			}
@@ -353,7 +378,7 @@ void input() {
 		}
 	}
 }
-void Entity::move(int dir) {
+bool Entity::move(int dir) {
 	switch (dir) {
 	case up: {
 		if (Chunk::getTile(x, y - 1)->walkable) {
@@ -380,8 +405,10 @@ void Entity::move(int dir) {
 		break;
 	}
 	}
+	return true;
 }
-void Enemy::move(int dir) {
+bool Enemy::move(int dir) {
+	if (rand() % 10 == 1) {
 		switch (rand() % 3) {
 		case up: {
 			if (Chunk::getTile(x, y - 1)->walkable) {
@@ -407,7 +434,42 @@ void Enemy::move(int dir) {
 			}
 			break;
 		}
+		}
 	}
+	return true;
+}
+bool Bullet::move(int dir) {
+	switch (direction) {
+	case up: {
+		if (Chunk::getTile(x, y - 1)->walkable) {
+			y -= 1;
+		}
+		else { return false; }
+		break;
+	}
+	case left: {
+		if (Chunk::getTile(x - 1, y)->walkable) {
+			x -= 1;
+		}
+		else { return false; }
+		break;
+	}
+	case down: {
+		if (Chunk::getTile(x, y + 1)->walkable) {
+			y += 1;
+		}
+		else { return false; }
+		break;
+	}
+	case right: {
+		if (Chunk::getTile(x + 1, y)->walkable) {
+			x += 1;
+		}
+		else { return false; }
+		break;
+	}
+	}
+	return true;
 }
 void Entity::die() {
 }
