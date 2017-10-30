@@ -329,26 +329,32 @@ int Chunk::primenum = 137;
 std::stack<Chunk*>* Chunk::hashmap = new std::stack<Chunk*>[primenum];
 Player* Chunk::p = new Player(0,0);
 std::vector<Entity*> Chunk::ents = std::vector<Entity*>();
+int counter = 0;
+const int cooldown = 5;
 void input() {
 	if (_kbhit()) {
 		int key = _getch();
 		std::cout << key << std::endl;
-		if (key == 224) {
+		if (key == 224 && counter == 0) {
 			switch (_getch()) {
 			case 72: {	//up
 				Chunk::shoot(up);
-				break; 
+				counter = cooldown;
+				break;
 			}
 			case 75: {	//left
 				Chunk::shoot(left);
-				break; 
+				counter = cooldown;
+				break;
 			}
 			case 80: {	//down
 				Chunk::shoot(down);
+				counter = cooldown;
 				break;
 			}
 			case 77: {	//right
 				Chunk::shoot(right);
+				counter = cooldown;
 				break;
 			}
 			}
@@ -480,6 +486,9 @@ int main(){
 	Chunk first;
 	srand(time(NULL));
 	while (alive) {
+		if (counter > 0) {
+			counter--;
+		}
 		input();
 		Chunk::draw();
 		Sleep(1);
