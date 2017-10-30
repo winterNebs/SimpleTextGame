@@ -12,7 +12,7 @@
 #include <string>
 #include "PerlinNoise.hpp"
 #include <iomanip>
-int seed = 420;
+int seed = rand() % 10000;
 bool alive = true;
 enum direction {up, left, down, right};
 enum wallstype {solid = 219, bottomw = 220, leftw = 221, rightw = 222, topw = 223};
@@ -51,7 +51,7 @@ struct TileSet {
 	TileSet(double ma = 1, int t = 35, bool w = true, int r = 0) :range{ r }, max { ma }, tile{ t }, walkable{ w } {	}
 }; 
 const std::vector<TileSet*> plains = { new TileSet(.6,med,true,400), new TileSet(.7,light,false) , new TileSet(2, white,false) };
-const std::vector<TileSet*> swamp = { new TileSet(.2, black,false,800), new TileSet(.3,water),new TileSet(.4,med), new  TileSet(.6,dark), new TileSet(2, tree, false) };
+const std::vector<TileSet*> swamp = { new TileSet(.2, black,false,800), new TileSet(.3,water, false),new TileSet(.4,med), new  TileSet(.6,dark), new TileSet(2, tree, false) };
 const std::vector<std::vector<TileSet*>> tilesets = {plains, swamp };///
 void Tile::interpret(double noise) {///what hte fuck
 	int rad = sqrt((x*x) + (y*y));
@@ -485,6 +485,14 @@ void Player::die() {
 int main(){
 	Chunk first;
 	srand(time(NULL));
+	std::cout << "Welcome to the simple text game." << std::endl;
+	std::cout << "This game was a 1 month project created to learn and become familiar with the syntax of c++." << std::endl;
+	std::cout << "If the game seems to be corrupted, you might need to change your system locale to english." << std::endl;
+	std::cout << "The controls are:" << std::endl;
+	std::cout << "WASD to move" << std::endl;
+	std::cout << "Arrow keys to shoot" << std::endl;
+	std::cout << "Have Fun!" << std::endl;
+	system("pause");
 	while (alive) {
 		if (counter > 0) {
 			counter--;
