@@ -485,6 +485,7 @@ void Player::die() {
 int main(){
 	Chunk first;
 	srand(time(NULL));
+	seed = rand() % 10000;
 	std::cout << "Welcome to the simple text game." << std::endl;
 	std::cout << "This game was a 1 month project created to learn and become familiar with the syntax of c++." << std::endl;
 	std::cout << "If the game seems to be corrupted, you might need to change your system locale to english." << std::endl;
