@@ -15,3 +15,10 @@ Days 25-30 were spent on implementing enemies.
 
 I learned a lot during the development of this game. In addition to just learning the syntax of C++, I learned a lot more about pointers, which don't really exist in Java. I also learned more about vectors, which exist in Java, however I have not used them much before. I would have liked to continue developing this game, however due to the flickering caused by the console, I decided it was not worth it to do another month.
 
+![textgame_2017-11-21_16-27-05](https://user-images.githubusercontent.com/26353101/52168439-7cdb4300-26f8-11e9-83dc-7bd63d8a98de.png)
+![textgame_2017-11-21_16-28-24](https://user-images.githubusercontent.com/26353101/52168440-7cdb4300-26f8-11e9-9c15-7519a2ee4379.png)
+![textgame_2017-11-21_16-28-54](https://user-images.githubusercontent.com/26353101/52168441-7d73d980-26f8-11e9-99e5-1b857b72d991.png)
+![textgame_2017-11-21_16-31-36](https://user-images.githubusercontent.com/26353101/52168442-7d73d980-26f8-11e9-9b72-afa9a594ba99.png)
+![textgame_2017-11-21_16-32-51](https://user-images.githubusercontent.com/26353101/52168443-7d73d980-26f8-11e9-9567-d93489a318b9.png)
+![textgame_2017-11-21_16-33-12](https://user-images.githubusercontent.com/26353101/52168444-7d73d980-26f8-11e9-9726-a9776cf16018.png)
+![textgame_2017-11-21_16-34-28](https://user-images.githubusercontent.com/26353101/52168445-7d73d980-26f8-11e9-881e-6e9b30c42fca.png)
