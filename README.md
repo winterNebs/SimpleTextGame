@@ -5,7 +5,7 @@ Built Release (May need to instal c++ libraries):
 https://github.com/winterNebs/SimpleTextGame/raw/Noise/textgame.exe
 
 Simple Text Game is a simple, infinite, open world, top-down, text-based game.
-This was a 1 month project, completed in October, to help familiarize myself with C++.
+This was a 1 month project, completed in October 2017, to help familiarize myself with C++.
 ---
 The first 14 days were spent on getting the basics of the tile engine to work properly, including actually getting output at all, storing data properly, etc.
 The next 2 days were spent on setting up hashing for the data storage (16x16 tiles are stored in a Chunk, all the chunks are stored in the hash).
